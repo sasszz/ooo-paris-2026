@@ -77,8 +77,8 @@ function renderMap(checkins) {
   const stats = { stops: geo.length, cities: cities.size, countries: countries.size, miles: Math.round(miles), croissants: totalCroissants };
 
   const badge = document.getElementById('map-badge');
-  const serif = s => `<span style="color:#FFB3C6;text-transform:none">${s}</span>`;
-  const num = n => `<span style="color:#FFB3C6;font-weight:700">${n}</span>`;
+  const serif = s => `<span style="color:var(--badge-accent);text-transform:none">${s}</span>`;
+  const num = n => `<span style="color:var(--badge-accent);font-weight:700">${n}</span>`;
   const arrow = `▾`;
   const stopLabel = () => `${stats.stops} stops ${serif('and counting')} ${arrow}`;
   badge.style.display = 'inline-flex';
@@ -575,7 +575,32 @@ function rainCroissants() {
   }
 })();
 
+// ── LUCIE'S LOCAL TIME ──
+function updateParisTime() {
+  const now = new Date();
+  // Switch to Paris timezone once it's June 1 in Paris; before that she's in LA
+  const parisDay = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now);
+  const tz = parisDay >= '2026-06-01' ? 'Europe/Paris' : 'America/Los_Angeles';
+
+  const timeStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true
+  }).format(now).toLowerCase();
+
+  const lucieDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const hour = lucieDate.getHours();
+  const isNight = hour >= 21 || hour < 6;
+  const emoji = isNight ? '🌙' : '☀️';
+
+  const el = document.getElementById('paris-time');
+  if (el) el.textContent = `${emoji} it's ${timeStr} where Lucie is`;
+  document.body.classList.toggle('night', isNight);
+}
+
 // ── INIT ──
 initMap();
 renderPage();
 rainCroissants();
+updateParisTime();
+setInterval(updateParisTime, 60000);

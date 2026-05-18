@@ -21,9 +21,9 @@ function saveConfig() {
 // ── DATA ──
 async function loadCheckins() {
   try {
-    const r = await fetch('/.netlify/functions/checkins');
+    const r = await fetch('https://api.jsonbin.io/v3/b/6a079ab8c0954111d82cf3e1/latest');
     if (!r.ok) throw 0;
-    return await r.json();
+    return (await r.json()).record.checkins || [];
   } catch(e) { console.warn('checkins load failed'); }
   return JSON.parse(localStorage.getItem('ooo_checkins') || '[]');
 }

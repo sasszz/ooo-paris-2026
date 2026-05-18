@@ -1,22 +1,5 @@
 // ── CONFIG ──
-function getCfg() {
-  return {
-    apiKey:     localStorage.getItem('ooo_apikey')   || '',
-    binId:      localStorage.getItem('ooo_binid')    || '',
-    password:   localStorage.getItem('ooo_password') || 'vacation2025',
-    returnDate: localStorage.getItem('ooo_return')   || '',
-    contact:    localStorage.getItem('ooo_contact')  || '[your backup contact]',
-  };
-}
-
-function saveConfig() {
-  localStorage.setItem('ooo_apikey',   document.getElementById('cfg-apikey').value.trim());
-  localStorage.setItem('ooo_binid',    document.getElementById('cfg-binid').value.trim());
-  localStorage.setItem('ooo_password', document.getElementById('cfg-password').value || 'vacation2025');
-  localStorage.setItem('ooo_return',   document.getElementById('cfg-return').value.trim());
-  localStorage.setItem('ooo_contact',  document.getElementById('cfg-contact').value.trim());
-  alert('Settings saved! Refresh to apply.');
-}
+const ADMIN_PASSWORD = 'wesley2026';
 
 // ── DATA ──
 async function loadCheckins() {
@@ -54,7 +37,7 @@ function makeIcon(isLatest) {
   const size = isLatest ? 16 : 11;
   return L.divIcon({
     className: '',
-    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#c4602a' : '#8a7f72'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
+    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#7B6FCD' : '#9090B8'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2 - 2]
@@ -87,9 +70,6 @@ function renderMap(checkins) {
 
 // ── PAGE RENDER ──
 async function renderPage() {
-  const cfg = getCfg();
-  document.getElementById('ooo-contact').textContent = cfg.contact;
-
   const checkins = await loadCheckins();
   document.getElementById('loading').style.display = 'none';
   renderMap(checkins);
@@ -104,7 +84,6 @@ async function renderPage() {
   document.getElementById('checkin-location').textContent = latest.location;
   document.getElementById('checkin-caption').textContent = latest.caption || '';
   document.getElementById('checkin-time').textContent = fmtLong(latest.timestamp);
-  if (cfg.returnDate) document.getElementById('back-date').textContent = cfg.returnDate;
 
   if (latest.photoUrl) {
     document.getElementById('photo-placeholder').style.display = 'none';
@@ -136,27 +115,22 @@ async function renderPage() {
 
 // ── FORMATTERS ──
 function fmtLong(ts) {
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-    + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return new Date(ts).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 function fmtShort(ts) {
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ── ADMIN ──
 let unlocked = false;
 
 function openAdmin() {
-  const cfg = getCfg();
-  ['cfg-apikey', 'cfg-binid', 'cfg-password', 'cfg-return', 'cfg-contact'].forEach((id, i) => {
-    document.getElementById(id).value = [cfg.apiKey, cfg.binId, cfg.password, cfg.returnDate, cfg.contact][i];
-  });
+  unlocked = false;
+  document.getElementById('pw-input').value = '';
+  document.getElementById('login-status').textContent = '';
   document.getElementById('admin-overlay').classList.add('open');
-  unlocked ? showPostView() : showLoginView();
+  showLoginView();
 }
 
 function closeAdmin() {
@@ -174,16 +148,12 @@ function showPostView() {
 }
 
 function doLogin() {
-  if (document.getElementById('pw-input').value === getCfg().password) {
+  if (document.getElementById('pw-input').value === ADMIN_PASSWORD) {
     unlocked = true;
     showPostView();
   } else {
     document.getElementById('login-status').textContent = 'Incorrect password.';
   }
-}
-
-function toggleConfig() {
-  document.getElementById('config-section').classList.toggle('open');
 }
 
 function previewPhoto(e) {
@@ -342,6 +312,57 @@ async function uploadToCloudinary(file) {
   if (!r.ok) throw new Error('Cloudinary upload failed');
   return (await r.json()).secure_url;
 }
+
+// ── FLIP COUNTDOWN ──
+(function() {
+  const TARGET = new Date('2026-06-22T00:00:00');
+  const cards = {
+    days:  document.getElementById('flip-days'),
+    hours: document.getElementById('flip-hours'),
+    mins:  document.getElementById('flip-mins'),
+    secs:  document.getElementById('flip-secs'),
+  };
+  const prev = { days: null, hours: null, mins: null, secs: null };
+
+  function flipCard(card, oldVal, newVal) {
+    const fTop = card.querySelector('.flip-fold-top');
+    const fBot = card.querySelector('.flip-fold-bot');
+    fTop.querySelector('span').textContent = oldVal;
+    fBot.querySelector('span').textContent = newVal;
+    fTop.classList.remove('go');
+    fBot.classList.remove('go');
+    void fTop.offsetWidth;
+    fTop.classList.add('go');
+    fBot.classList.add('go');
+    // Update statics only after each half has animated away
+    setTimeout(() => { card.querySelector('.flip-upper span').textContent = newVal; }, 280);
+    setTimeout(() => { card.querySelector('.flip-lower span').textContent = newVal; }, 560);
+  }
+
+  function tick() {
+    const diff = TARGET - new Date();
+    if (diff <= 0) return;
+    const vals = {
+      days:  String(Math.floor(diff / 86400000)).padStart(2, '0'),
+      hours: String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0'),
+      mins:  String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0'),
+      secs:  String(Math.floor((diff % 60000) / 1000)).padStart(2, '0'),
+    };
+    for (const [key, val] of Object.entries(vals)) {
+      if (val === prev[key]) continue;
+      const card = cards[key];
+      if (prev[key] === null) {
+        card.querySelectorAll('span').forEach(s => s.textContent = val);
+      } else {
+        flipCard(card, prev[key], val);
+      }
+      prev[key] = val;
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();
 
 // ── INIT ──
 initMap();

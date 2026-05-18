@@ -4,9 +4,9 @@ const ADMIN_PASSWORD = 'wesley2026';
 // ── DATA ──
 async function loadCheckins() {
   try {
-    const r = await fetch('https://api.jsonbin.io/v3/b/6a079ab8c0954111d82cf3e1/latest');
+    const r = await fetch('/.netlify/functions/checkins');
     if (!r.ok) throw 0;
-    return (await r.json()).record.checkins || [];
+    return await r.json();
   } catch(e) { console.warn('checkins load failed'); }
   return JSON.parse(localStorage.getItem('ooo_checkins') || '[]');
 }

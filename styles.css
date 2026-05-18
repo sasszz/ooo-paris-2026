@@ -60,7 +60,7 @@ main { max-width: 680px; margin: 0 auto; padding: 36px 20px 60px; }
 }
 @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
 
-.checkin-photo { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+.checkin-photo { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; max-height:320px; }
 .photo-placeholder {
   width:100%; aspect-ratio:16/9;
   background: linear-gradient(135deg, var(--warm), #B8B8F0);
@@ -212,7 +212,27 @@ textarea { resize:vertical; min-height:80px; }
 /* ── LEAFLET POPUP ── */
 .leaflet-popup-content-wrapper { border-radius:12px; font-family:'DM Sans',sans-serif; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
 .leaflet-popup-content { margin:12px 14px; }
-.popup-img { width:100%; border-radius:6px; margin-bottom:7px; display:block; }
+.popup-img { width:100%; border-radius:6px; margin-bottom:7px; display:block; cursor:zoom-in; }
+.popup-img:hover { opacity:0.9; }
+
+#lightbox {
+  display:none; position:fixed; inset:0; background:rgba(10,8,30,0.92);
+  z-index:3000; align-items:center; justify-content:center; padding:20px;
+  cursor:zoom-out;
+}
+#lightbox.open { display:flex; }
+#lightbox-img {
+  max-width:100%; max-height:90vh; border-radius:10px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6); cursor:default;
+}
+#lightbox-close {
+  position:fixed; top:16px; right:20px; background:rgba(204,204,255,0.15);
+  border:1px solid rgba(204,204,255,0.3); color:var(--warm);
+  width:38px; height:38px; border-radius:50%; font-size:1.3rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s;
+}
+#lightbox-close:hover { background:rgba(204,204,255,0.25); }
 .popup-loc { font-weight:600; font-size:0.88rem; margin-bottom:3px; }
 .popup-cap { font-size:0.76rem; color:#555; line-height:1.4; margin-bottom:3px; }
 .popup-time { font-size:0.68rem; color:#999; }

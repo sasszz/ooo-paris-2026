@@ -53,7 +53,7 @@ function renderMap(checkins) {
   geo.forEach((c, i) => {
     const isLatest = i === geo.length - 1;
     const m = L.marker([c.lat, c.lng], { icon: makeIcon(isLatest) });
-    const img = c.photoUrl ? `<img class="popup-img" src="${c.photoUrl}">` : '';
+    const img = c.photoUrl ? `<img class="popup-img" src="${c.photoUrl}" onclick="openLightbox('${c.photoUrl}')">` : '';
     const cap = c.caption ? `<div class="popup-cap">${c.caption.length > 70 ? c.caption.slice(0, 70) + '…' : c.caption}</div>` : '';
     m.bindPopup(
       `<div style="min-width:160px">${img}<div class="popup-loc">${c.location}</div>${cap}<div class="popup-time">${fmtShort(c.timestamp)}</div></div>`,
@@ -330,6 +330,17 @@ async function uploadToCloudinary(file) {
   if (!r.ok) throw new Error('Cloudinary upload failed');
   return (await r.json()).secure_url;
 }
+
+// ── LIGHTBOX ──
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // ── FLIP COUNTDOWN ──
 (function() {

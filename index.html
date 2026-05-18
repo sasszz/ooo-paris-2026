@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Out of Office ✈️</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">Out of <em>Office</em></div>
+    <div class="header-sub">Live travel check-ins</div>
+  </div>
+  <button class="admin-btn" onclick="openAdmin()">Post update</button>
+</header>
+
+<div id="map-wrap">
+  <div class="map-badge" id="map-badge"></div>
+  <div id="map"></div>
+</div>
+
+<main>
+  <div id="setup-notice">
+    <strong>⚙️ First-time setup needed.</strong> To sync check-ins across devices, this page uses <strong>JSONbin.io</strong> as a free data store.<br><br>
+    1. Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> → sign up free → create a new bin with content <code>{"checkins":[]}</code><br>
+    2. Copy your <strong>Bin ID</strong> and <strong>Access Key</strong><br>
+    3. Click <em>"Post update"</em> → open <em>⚙️ Settings</em> → paste them in<br><br>
+    Without this, check-ins only save locally on this device.
+  </div>
+
+  <div id="loading">
+    <div class="loader"></div>
+    Loading check-ins…
+  </div>
+
+  <div id="latest-section" style="display:none">
+    <div class="section-label">Latest check-in</div>
+    <div id="checkin-card">
+      <div id="photo-wrap">
+        <div class="photo-placeholder" id="photo-placeholder">🏝️</div>
+        <img class="checkin-photo" id="checkin-photo" src="" alt="" style="display:none">
+      </div>
+      <div class="checkin-body">
+        <div class="checkin-meta">
+          <div class="pin-dot"></div>
+          <div class="checkin-location" id="checkin-location"></div>
+        </div>
+        <div class="checkin-caption" id="checkin-caption"></div>
+        <div class="checkin-footer">
+          <div class="checkin-time" id="checkin-time"></div>
+          <div class="back-date" id="back-date"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-section" style="display:none">
+    <div class="section-label" style="margin-top:32px">All stops</div>
+    <div id="history-list"></div>
+  </div>
+
+  <div id="empty-state">
+    <div class="empty-icon">✈️</div>
+    <div class="empty-title">I'm out of office!</div>
+    <div class="empty-sub">Check back soon for my first update from the road.</div>
+  </div>
+
+  <div class="ooo-note" id="ooo-note" style="display:none">
+    📬 <strong>I'm out of office</strong> — this page shows my live location while I'm away.
+    I'll respond when I return. For urgent matters, contact <span id="ooo-contact">[your backup contact]</span>.
+  </div>
+</main>
+
+<!-- ADMIN OVERLAY -->
+<div id="admin-overlay">
+  <div class="admin-panel">
+    <button class="admin-close" onclick="closeAdmin()">×</button>
+    <div class="admin-title">Post a check-in</div>
+    <div class="admin-sub">Share where you are right now</div>
+
+    <!-- Login view -->
+    <div id="login-view">
+      <div class="login-section">
+        <div class="field">
+          <label>Admin Password</label>
+          <input type="password" id="pw-input" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Unlock</button>
+        <div id="login-status" style="margin-top:10px;font-size:0.82rem;color:#c0392b;text-align:center"></div>
+      </div>
+      <div style="font-size:0.77rem;color:var(--muted);text-align:center">
+        Default password: <strong>vacation2025</strong><br>
+        <span class="config-toggle" onclick="toggleConfig()">⚙️ Configure storage & password</span>
+      </div>
+      <div id="config-section">
+        <div class="config-note">
+          Create a free account at <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>,
+          make a new bin with <code>{"checkins":[]}</code>, and paste credentials below.
+        </div>
+        <div class="field">
+          <label>JSONbin Access Key</label>
+          <input type="text" id="cfg-apikey" placeholder="$2b$10$...">
+        </div>
+        <div class="field">
+          <label>Bin ID</label>
+          <input type="text" id="cfg-binid" placeholder="64abc123def...">
+        </div>
+        <div class="field">
+          <label>Admin Password</label>
+          <input type="text" id="cfg-password" placeholder="vacation2025">
+        </div>
+        <div class="field">
+          <label>Return Date</label>
+          <input type="text" id="cfg-return" placeholder="Back July 14">
+        </div>
+        <div class="field">
+          <label>Backup Contact</label>
+          <input type="text" id="cfg-contact" placeholder="jane@company.com">
+        </div>
+        <button class="btn-primary" onclick="saveConfig()" style="margin-bottom:10px">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Post view -->
+    <div id="post-view" style="display:none">
+      <div class="field">
+        <label>Location Name</label>
+        <div class="location-autocomplete">
+          <input type="text" id="post-location" placeholder="e.g. Eiffel Tower, Paris" autocomplete="off">
+          <ul id="location-suggestions" class="suggestions-list"></ul>
+        </div>
+      </div>
+      <div class="field">
+        <label>Coordinates (for map pin)</label>
+        <div class="coord-row">
+          <input type="text" id="post-lat" placeholder="Latitude">
+          <input type="text" id="post-lng" placeholder="Longitude">
+        </div>
+        <div class="coord-hint">Type a place name above and select it — coordinates fill in automatically.</div>
+      </div>
+      <div class="field">
+        <label>Caption</label>
+        <textarea id="post-caption" placeholder="What's happening? Any highlights?"></textarea>
+      </div>
+      <div class="field">
+        <label>Photo</label>
+        <div class="photo-upload-area">
+          <input type="file" id="photo-file" accept="image/*" onchange="previewPhoto(event)">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">Tap to choose a photo</div>
+          <img id="preview-img" src="" alt="Preview">
+        </div>
+      </div>
+      <button class="btn-primary" id="post-btn" onclick="postCheckin()">📍 Post Check-in</button>
+      <div id="post-status"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

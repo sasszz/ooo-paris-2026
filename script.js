@@ -475,39 +475,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbo
 // ── CROISSANT POPUP ──
 const CROISSANT_MSGS = [
   "Félicitations! You found the secret croissant.",
-  "Did you know a proper croissant has 81 layers of laminated dough? The butter alone takes hours.",
   "The croissant spins because it's trying to find its way back to the boulangerie.",
   "Fun fact: the croissant was actually invented in Austria. Don't tell the French.",
   "At this rate, Lucie may need a second suitcase just for croissants.",
-  "Every croissant eaten is a small act of joie de vivre.",
-  "Butter. Butter. More butter. This is the croissant way.",
-  "Croissant: /kwɑːˈsɒ̃/ — also acceptable: /krəˈsɒnt/ (if you're feeling brave).",
-  "The croissant is technically a pastry. In France, it's a personality.",
-  "A stale croissant is a tragedy. A fresh one is a religious experience.",
   "Lucie is somewhere in France right now, probably holding a croissant.",
   "You caught it! The croissant was not expecting this.",
-  "In France, the croissant is not just breakfast. It's a philosophy.",
   "A croissant a day keeps the sadness away. Science has not confirmed this, but Lucie believes it.",
   "The word croissant means 'crescent' in French. The moon is also beautiful. Coincidence? Non.",
-  "You have found the golden croissant. Your reward is this message.",
+  "You have found the golden croissant. You will have good luck today!",
   "In a parallel universe, Lucie is eating a croissant right now. In this universe: also yes.",
-  "The croissant: flaky on the outside, buttery on the inside, perfect in every way.",
-  "Some say you can measure the quality of a city by its croissants. Paris scores 10/10.",
   "Congratulations! You are the most dedicated croissant-clicker on the internet.",
-  "A warm croissant from a Parisian boulangerie is worth more than any souvenir.",
   "They say patience is a virtue. They clearly haven't waited for croissants to come out of the oven.",
-  "Mon dieu! You clicked the croissant.",
+  "Mon dieu! You clicked the croissant!",
   "The croissant does not judge. The croissant only nourishes.",
-  "There are many uncertainties in life. A croissant with good coffee is not one of them.",
-  "This croissant has traveled far to reach you. From France, to this screen, to your heart.",
-  "You keep clicking. The croissant keeps giving. This is the way.",
-  "In French, 'croissant' is also the present participle of 'croître', meaning to grow. Growth is beautiful. So is butter.",
-  "The croissant has no enemies. Only people who haven't tried one yet.",
+  "This croissant has traveled far to reach you. From France, to this screen, to your cursor.",
+  "The croissant has no enemies... except for people who haven't tried one yet...",
   "Real croissants: crescent-shaped, flaky, buttery. Grocery store croissants: we don't talk about those.",
-  "You are now an honorary croissant enthusiast. Welcome to the club.",
-  "The lamination process for a croissant involves folding the dough 27 times. Twenty. Seven.",
-  "Somewhere in Paris, a baker woke up at 4am to make these. Honor that sacrifice.",
-  "A croissant paired with a café au lait is not breakfast. It's an experience.",
+  "You are now a member of the Croissant Lover club. Welcome! We've been expecting you.",
   "The secret to a perfect croissant is time. Also butter. Mostly butter.",
   "Lucie counted. There is no such thing as too many croissants.",
 ];
@@ -579,6 +563,17 @@ function rainCroissants() {
   }
   setTimeout(startBouncingCroissant, 8000);
 }
+
+// ── MAP SCROLL BUTTON (mobile only) ──
+(function() {
+  const btn = document.getElementById('map-scroll-btn');
+  const mapWrap = document.getElementById('map-wrap');
+  if (window.matchMedia('(max-width:900px)').matches) {
+    new IntersectionObserver(([entry]) => {
+      btn.style.display = entry.isIntersecting ? 'flex' : 'none';
+    }, { threshold: 0.1 }).observe(mapWrap);
+  }
+})();
 
 // ── INIT ──
 initMap();

@@ -88,7 +88,6 @@ function renderMap(checkins) {
 // ── PAGE RENDER ──
 async function renderPage() {
   const cfg = getCfg();
-  if (!cfg.apiKey || !cfg.binId) document.getElementById('setup-notice').style.display = 'block';
   document.getElementById('ooo-contact').textContent = cfg.contact;
 
   const checkins = await loadCheckins();
@@ -266,7 +265,11 @@ async function postCheckin() {
       li.innerHTML = `<div class="sug-main">${main}</div>${sub ? `<div class="sug-sub">${sub}</div>` : ''}`;
       li.addEventListener('mousedown', e => {
         e.preventDefault();
-        input.value = item.display_name;
+        const a = item.address || {};
+        const place = item.display_name.split(', ')[0];
+        const city = a.city || a.town || a.village || a.municipality || a.county || '';
+        const country = a.country || '';
+        input.value = [place, city, country].filter(Boolean).join(', ');
         document.getElementById('post-lat').value = parseFloat(item.lat).toFixed(6);
         document.getElementById('post-lng').value = parseFloat(item.lon).toFixed(6);
         list.classList.remove('open');
@@ -278,7 +281,7 @@ async function postCheckin() {
 
   async function fetchSuggestions(q) {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(q)}`;
       const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
       const data = await res.json();
       showSuggestions(data);

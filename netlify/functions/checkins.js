@@ -16,6 +16,9 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'PUT') {
+    if (event.headers['x-admin-password'] !== process.env.ADMIN_PASSWORD) {
+      return { statusCode: 401, body: 'Unauthorized' };
+    }
     const r = await fetch(base, {
       method: 'PUT',
       headers,

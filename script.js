@@ -16,7 +16,7 @@ async function saveCheckins(list) {
   try {
     await fetch('/.netlify/functions/checkins', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': ADMIN_PASSWORD },
       body: JSON.stringify(list)
     });
   } catch(e) { console.warn('checkins save failed'); }
@@ -86,6 +86,17 @@ async function renderPage() {
   document.getElementById('checkin-location').textContent = latest.location;
   document.getElementById('checkin-caption').textContent = latest.caption || '';
   document.getElementById('checkin-time').textContent = fmtLong(latest.timestamp);
+
+  const card = document.getElementById('checkin-card');
+  if (latest.lat && latest.lng) {
+    card.style.cursor = 'pointer';
+    card.onclick = () => {
+      map.setView([latest.lat, latest.lng], 10);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const m = markerMap[`${latest.lat},${latest.lng},${latest.timestamp}`];
+      if (m) setTimeout(() => m.openPopup(), 350);
+    };
+  }
 
   if (latest.photoUrl) {
     document.getElementById('photo-placeholder').style.display = 'none';

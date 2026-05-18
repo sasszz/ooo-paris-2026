@@ -110,10 +110,30 @@ footer {
   background: var(--ink); color: rgba(204,204,255,0.6);
   text-align: center; padding: 28px 20px; font-size: 0.78rem; line-height: 1.9;
 }
+footer > * {
+  max-width: 680px; margin-left: auto; margin-right: auto;
+}
 footer strong { color: rgba(204,204,255,0.9); }
 footer a { color: var(--warm); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 footer .admin-btn { margin-top: 28px; }
+
+.coffee-box {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: rgba(204,204,255,0.08); border: 1px solid rgba(204,204,255,0.2);
+  border-radius: 14px; padding: 20px 24px; margin-bottom: 28px; text-align: left;
+}
+.coffee-emoji { font-size: 2rem; flex-shrink: 0; }
+.coffee-text { flex: 1; min-width: 160px; }
+.coffee-text strong { color: rgba(204,204,255,0.95); font-size: 0.95rem; display: block; margin-bottom: 4px; }
+.coffee-text p { font-size: 0.78rem; color: rgba(204,204,255,0.55); line-height: 1.5; margin: 0; }
+.coffee-btn {
+  flex-shrink: 0; background: var(--warm); color: var(--ink);
+  font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.85rem;
+  padding: 10px 20px; border-radius: 30px; text-decoration: none;
+  transition: background 0.2s, transform 0.2s; white-space: nowrap;
+}
+.coffee-btn:hover { background: #B8B8F0; transform: translateY(-1px); text-decoration: none; }
 
 /* ── ADMIN OVERLAY ── */
 #admin-overlay {

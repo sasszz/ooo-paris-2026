@@ -23,7 +23,8 @@ async function saveCheckins(list) {
 }
 
 // ── MAP ──
-let map, markers, markerMap = {};
+let map, markers, markerMap = {}, _checkinByTs = {}, _totalCroissants = 0;
+
 
 function initMap() {
   map = L.map('map', { zoomControl: true, scrollWheelZoom: false });
@@ -34,10 +35,10 @@ function initMap() {
 }
 
 function makeIcon(isLatest) {
-  const size = isLatest ? 16 : 11;
+  const size = isLatest ? 16 : 13;
   return L.divIcon({
     className: '',
-    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#7B6FCD' : '#9090B8'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
+    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#7B6FCD' : '#6B5FB0'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2 - 2]
@@ -49,31 +50,68 @@ function renderMap(checkins) {
   markerMap = {};
   const geo = checkins.filter(c => c.lat != null && c.lng != null);
   if (!geo.length) { map.setView([20, 0], 2); return; }
+  _totalCroissants = checkins.reduce((sum, c) => sum + (c.croissants || 0), 0);
+  const totalCroissants = _totalCroissants;
 
   geo.forEach((c, i) => {
     const isLatest = i === geo.length - 1;
     const m = L.marker([c.lat, c.lng], { icon: makeIcon(isLatest) });
-    const img = c.photoUrl ? `<img class="popup-img" src="${c.photoUrl}" onclick="openLightbox('${c.photoUrl}')">` : '';
+    const img = c.photoUrl ? `<img class="popup-img" src="${c.photoUrl}">` : '';
     const cap = c.caption ? `<div class="popup-cap">${c.caption.length > 70 ? c.caption.slice(0, 70) + '…' : c.caption}</div>` : '';
+    const crois = c.croissants ? `<div class="popup-croissants">${'🥐'.repeat(c.croissants)}</div>` : '';
     m.bindPopup(
-      `<div style="min-width:160px">${img}<div class="popup-loc">${c.location}</div>${cap}<div class="popup-time">${fmtShort(c.timestamp)}</div></div>`,
-      { maxWidth: 230 }
+      `<div class="popup-card" onclick="openLightboxByTs(${c.timestamp})">${img}<div class="popup-loc">${c.location}</div>${cap}${crois}<div class="popup-time">${fmtShort(c.timestamp)}</div></div>`,
+      { maxWidth: 260 }
     );
     markers.addLayer(m);
     markerMap[`${c.lat},${c.lng},${c.timestamp}`] = m;
     if (isLatest) { setTimeout(() => m.openPopup(), 300); }
   });
 
-  map.fitBounds(markers.getBounds(), { padding: [44, 44], maxZoom: 10 });
+  const latestGeo = geo[geo.length - 1];
+  map.setView([latestGeo.lat, latestGeo.lng], 11);
+  let miles = 0;
+  for (let i = 1; i < geo.length; i++) miles += haversineMiles(geo[i-1].lat, geo[i-1].lng, geo[i].lat, geo[i].lng);
+  const cities = new Set(geo.map(c => { const p = c.location.split(', '); return p.length >= 3 ? p[p.length - 2].trim() : null; }).filter(Boolean));
+  const countries = new Set(geo.map(c => c.location.split(', ').pop().trim()));
+  const stats = { stops: geo.length, cities: cities.size, countries: countries.size, miles: Math.round(miles), croissants: totalCroissants };
+
   const badge = document.getElementById('map-badge');
-  badge.style.display = 'block';
-  badge.textContent = `${geo.length} stop${geo.length !== 1 ? 's' : ''}`;
+  const serif = s => `<span style="color:#FFB3C6;text-transform:none">${s}</span>`;
+  const num = n => `<span style="color:#FFB3C6;font-weight:700">${n}</span>`;
+  const arrow = `▾`;
+  const stopLabel = () => `${stats.stops} stops ${serif('and counting')} ${arrow}`;
+  badge.style.display = 'inline-flex';
+  badge.innerHTML = stopLabel();
+  badge.onclick = () => {
+    const open = badge.classList.toggle('expanded');
+    if (open) {
+      badge.innerHTML = `
+        <div class="badge-stat">${num(stats.stops)} stops ${serif('and counting')}</div>
+        <div class="badge-stat">${num(stats.cities)} cit${stats.cities !== 1 ? 'ies' : 'y'}</div>
+        <div class="badge-stat">${num(stats.countries)} countr${stats.countries !== 1 ? 'ies' : 'y'}</div>
+        <div class="badge-stat">${num(stats.miles.toLocaleString())} mi traveled</div>
+        ${stats.croissants ? `<div class="badge-stat">${num(stats.croissants)} 🥐 eaten</div>` : ''}
+      `;
+    } else {
+      badge.innerHTML = stopLabel();
+    }
+  };
+  document.addEventListener('click', e => {
+    if (!badge.contains(e.target)) {
+      badge.classList.remove('expanded');
+      badge.innerHTML = stopLabel();
+    }
+  }, { capture: true, once: false });
+
 }
 
 // ── PAGE RENDER ──
 async function renderPage() {
   const checkins = await loadCheckins();
   document.getElementById('loading').style.display = 'none';
+  _checkinByTs = {};
+  checkins.forEach(c => { _checkinByTs[c.timestamp] = c; });
   renderMap(checkins);
 
   if (!checkins.length) {
@@ -86,12 +124,15 @@ async function renderPage() {
   document.getElementById('checkin-location').textContent = latest.location;
   document.getElementById('checkin-caption').textContent = latest.caption || '';
   document.getElementById('checkin-time').textContent = fmtLong(latest.timestamp);
+  const croissantEl = document.getElementById('checkin-croissants');
+  if (latest.croissants) { croissantEl.textContent = '🥐'.repeat(latest.croissants); croissantEl.style.display = 'block'; }
+  else { croissantEl.style.display = 'none'; }
 
   const card = document.getElementById('checkin-card');
   if (latest.lat && latest.lng) {
     card.style.cursor = 'pointer';
     card.onclick = () => {
-      map.setView([latest.lat, latest.lng], 10);
+      map.setView([latest.lat, latest.lng], 13);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       const m = markerMap[`${latest.lat},${latest.lng},${latest.timestamp}`];
       if (m) setTimeout(() => m.openPopup(), 350);
@@ -100,9 +141,18 @@ async function renderPage() {
 
   if (latest.photoUrl) {
     document.getElementById('photo-placeholder').style.display = 'none';
+    document.getElementById('checkin-caption').style.display = '';
     const img = document.getElementById('checkin-photo');
     img.src = latest.photoUrl;
     img.style.display = 'block';
+  } else {
+    const ph = document.getElementById('photo-placeholder');
+    if (latest.caption) {
+      ph.innerHTML = `<span>${latest.caption}</span>`;
+      document.getElementById('checkin-caption').style.display = 'none';
+    } else {
+      ph.textContent = '🏝️';
+    }
   }
 
   if (checkins.length > 1) {
@@ -114,16 +164,18 @@ async function renderPage() {
       el.className = 'history-item';
       if (c.lat && c.lng) {
         el.onclick = () => {
-          map.setView([c.lat, c.lng], 10);
+          map.setView([c.lat, c.lng], 13);
           window.scrollTo({ top: 0, behavior: 'smooth' });
           const m = markerMap[`${c.lat},${c.lng},${c.timestamp}`];
           if (m) setTimeout(() => m.openPopup(), 350);
         };
       }
+      const ts = c.timestamp;
       const thumb = c.photoUrl
-        ? `<div class="history-thumb"><img src="${c.photoUrl}"></div>`
+        ? `<div class="history-thumb" style="cursor:pointer" onclick="event.stopPropagation();openLightboxByTs(${ts})"><img src="${c.photoUrl}"></div>`
         : `<div class="history-thumb">📍</div>`;
-      el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc">${c.location}</div><div class="history-cap">${c.caption || ''}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>`;
+      const croissantBit = c.croissants ? `<div class="history-croissants">${'🥐'.repeat(c.croissants)}</div>` : '';
+      el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc">${c.location}</div><div class="history-cap">${c.caption || ''}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>${croissantBit}`;
       list.appendChild(el);
     });
   }
@@ -174,6 +226,11 @@ function doLogin() {
   }
 }
 
+function adjustCroissants(delta) {
+  const el = document.getElementById('croissant-count');
+  el.textContent = Math.max(0, parseInt(el.textContent) + delta);
+}
+
 function previewPhoto(e) {
   const f = e.target.files[0];
   if (!f) return;
@@ -218,12 +275,14 @@ async function postCheckin() {
     }
   }
 
+  const croissants = parseInt(document.getElementById('croissant-count').textContent) || 0;
   const entry = {
     location,
     lat: isNaN(lat) ? null : lat,
     lng: isNaN(lng) ? null : lng,
     caption,
     photoUrl,
+    croissants: croissants || undefined,
     timestamp: Date.now()
   };
 
@@ -236,6 +295,7 @@ async function postCheckin() {
   setTimeout(() => {
     closeAdmin();
     ['post-location', 'post-lat', 'post-lng', 'post-caption'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('croissant-count').textContent = '0';
     document.getElementById('photo-file').value = '';
     document.getElementById('preview-img').style.display = 'none';
     document.getElementById('post-status').innerHTML = '';
@@ -331,11 +391,30 @@ async function uploadToCloudinary(file) {
   return (await r.json()).secure_url;
 }
 
+function haversineMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ── LIGHTBOX ──
-function openLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
+function openLightbox(c) {
+  const img = document.getElementById('lightbox-img');
+  if (c.photoUrl) { img.src = c.photoUrl; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+  document.getElementById('lightbox-location').textContent = c.location;
+  const cap = document.getElementById('lightbox-caption');
+  cap.textContent = c.caption || '';
+  cap.style.display = c.caption ? 'block' : 'none';
+  const timeEl = document.getElementById('lightbox-time');
+  const croissantHtml = c.croissants ? `<span class="lightbox-croissant-inline">🥐 × ${c.croissants}</span>` : '';
+  timeEl.innerHTML = `<span>${fmtLong(c.timestamp)}</span>${croissantHtml}`;
+  document.getElementById('lightbox-croissants').style.display = 'none';
   document.getElementById('lightbox').classList.add('open');
 }
+function openLightboxByTs(ts) { openLightbox(_checkinByTs[ts]); }
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightbox-img').src = '';
@@ -393,6 +472,115 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbo
   setInterval(tick, 1000);
 })();
 
+// ── CROISSANT POPUP ──
+const CROISSANT_MSGS = [
+  "Félicitations! You found the secret croissant.",
+  "Did you know a proper croissant has 81 layers of laminated dough? The butter alone takes hours.",
+  "The croissant spins because it's trying to find its way back to the boulangerie.",
+  "Fun fact: the croissant was actually invented in Austria. Don't tell the French.",
+  "At this rate, Lucie may need a second suitcase just for croissants.",
+  "Every croissant eaten is a small act of joie de vivre.",
+  "Butter. Butter. More butter. This is the croissant way.",
+  "Croissant: /kwɑːˈsɒ̃/ — also acceptable: /krəˈsɒnt/ (if you're feeling brave).",
+  "The croissant is technically a pastry. In France, it's a personality.",
+  "A stale croissant is a tragedy. A fresh one is a religious experience.",
+  "Lucie is somewhere in France right now, probably holding a croissant.",
+  "You caught it! The croissant was not expecting this.",
+  "In France, the croissant is not just breakfast. It's a philosophy.",
+  "A croissant a day keeps the sadness away. Science has not confirmed this, but Lucie believes it.",
+  "The word croissant means 'crescent' in French. The moon is also beautiful. Coincidence? Non.",
+  "You have found the golden croissant. Your reward is this message.",
+  "In a parallel universe, Lucie is eating a croissant right now. In this universe: also yes.",
+  "The croissant: flaky on the outside, buttery on the inside, perfect in every way.",
+  "Some say you can measure the quality of a city by its croissants. Paris scores 10/10.",
+  "Congratulations! You are the most dedicated croissant-clicker on the internet.",
+  "A warm croissant from a Parisian boulangerie is worth more than any souvenir.",
+  "They say patience is a virtue. They clearly haven't waited for croissants to come out of the oven.",
+  "Mon dieu! You clicked the croissant.",
+  "The croissant does not judge. The croissant only nourishes.",
+  "There are many uncertainties in life. A croissant with good coffee is not one of them.",
+  "This croissant has traveled far to reach you. From France, to this screen, to your heart.",
+  "You keep clicking. The croissant keeps giving. This is the way.",
+  "In French, 'croissant' is also the present participle of 'croître', meaning to grow. Growth is beautiful. So is butter.",
+  "The croissant has no enemies. Only people who haven't tried one yet.",
+  "Real croissants: crescent-shaped, flaky, buttery. Grocery store croissants: we don't talk about those.",
+  "You are now an honorary croissant enthusiast. Welcome to the club.",
+  "The lamination process for a croissant involves folding the dough 27 times. Twenty. Seven.",
+  "Somewhere in Paris, a baker woke up at 4am to make these. Honor that sacrifice.",
+  "A croissant paired with a café au lait is not breakfast. It's an experience.",
+  "The secret to a perfect croissant is time. Also butter. Mostly butter.",
+  "Lucie counted. There is no such thing as too many croissants.",
+];
+let _lastCroissantMsg = -1;
+let _croissantPopupJustOpened = false;
+
+function openCroissantPopup() {
+  let idx;
+  do { idx = Math.floor(Math.random() * CROISSANT_MSGS.length); } while (idx === _lastCroissantMsg);
+  _lastCroissantMsg = idx;
+  document.getElementById('croissant-popup-msg').textContent = CROISSANT_MSGS[idx];
+  document.getElementById('croissant-popup').classList.add('open');
+  const bouncer = document.getElementById('bouncing-croissant');
+  if (bouncer) bouncer.remove();
+  _croissantPopupJustOpened = true;
+  setTimeout(() => { _croissantPopupJustOpened = false; }, 300);
+}
+function closeCroissantPopup() {
+  if (_croissantPopupJustOpened) return;
+  document.getElementById('croissant-popup').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCroissantPopup(); });
+
+// ── CROISSANT RAIN ──
+function startBouncingCroissant() {
+  const el = document.createElement('div');
+  el.id = 'bouncing-croissant';
+  el.textContent = '🥐';
+  el.addEventListener('pointerdown', e => { e.stopPropagation(); openCroissantPopup(); });
+  document.body.appendChild(el);
+
+  const size = 52;
+  let x = Math.random() * (window.innerWidth - size);
+  let y = Math.random() * (window.innerHeight - size);
+  let vx = (Math.random() > 0.5 ? 1 : -1) * 1.1;
+  let vy = (Math.random() > 0.5 ? 1 : -1) * 1.1;
+  let angle = 0;
+
+  function frame() {
+    x += vx;
+    y += vy;
+    angle += 1.2;
+    if (x <= 0) { x = 0; vx = Math.abs(vx); }
+    else if (x >= window.innerWidth - size) { x = window.innerWidth - size; vx = -Math.abs(vx); }
+    if (y <= 0) { y = 0; vy = Math.abs(vy); }
+    else if (y >= window.innerHeight - size) { y = window.innerHeight - size; vy = -Math.abs(vy); }
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.transform = `rotate(${angle}deg)`;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function rainCroissants() {
+  const count = 35;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'croissant-rain-item';
+    el.textContent = '🥐';
+    el.style.left = (Math.random() * 100) + 'vw';
+    el.style.fontSize = (1.2 + Math.random() * 1.6) + 'rem';
+    const duration = 2.5 + Math.random() * 2.5;
+    const delay = Math.random() * 2.5;
+    el.style.animationDuration = duration + 's';
+    el.style.animationDelay = delay + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), (duration + delay) * 1000 + 200);
+  }
+  setTimeout(startBouncingCroissant, 8000);
+}
+
 // ── INIT ──
 initMap();
 renderPage();
+rainCroissants();

@@ -2,7 +2,7 @@
 
 ## Inspiration
 
-I was inspired to build this app while drafting an OOO for my Outlook inbox at my IT job. I felt that the standard OOO reply was dismissive and repetitive.
+I was inspired to build this app while drafting an OOO for my Outlook inbox. I felt that the standard OOO reply was dismissive and repetitive.
 
 Rather than a static "I'm away, good luck," this app turns every OOO reply into an exciting travel journal. Colleagues can see what I'm up to, and it turns my absence from a moment of denial to a moment of connection. Also, since I'll be posting regular updates, if they inevitably get another OOO reply from me, there will be something new to check out!
 
@@ -33,9 +33,9 @@ A personal travel journal where I post geo-tagged check-ins with photos with cap
 
 ## Features
 
-**For visitors:** flip-clock countdown · interactive map with pin popups · expandable stats (stops, cities, miles, croissants) · latest check-in card · full scrollable feed · photo lightbox · raining croissants animation · interactive croissant · scroll-to-content button (mobile) · custom favicon · **day/night mode** which change based on Lucie's local time
+**For visitors:** flip-clock countdown · interactive map with pin popups · expandable stats (stops, cities, miles, croissants) · latest check-in card · full scrollable feed · photo lightbox · raining croissants animation · interactive croissant · scroll-to-content button (mobile) · custom favicon · **day/night mode** which change based on my local time
 
-**For Lucie:** password-protected admin panel · location autocomplete with auto lat/lng · photo upload to Cloudinary · croissant stepper · saves to JSONBin.io instantly
+**For Me:** password-protected admin panel · location autocomplete with auto lat/lng · photo upload to Cloudinary · croissant stepper · saves to JSONBin.io instantly
 
 ---
 

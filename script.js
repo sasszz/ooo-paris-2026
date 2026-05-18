@@ -23,7 +23,7 @@ async function saveCheckins(list) {
 }
 
 // ── MAP ──
-let map, markers;
+let map, markers, markerMap = {};
 
 function initMap() {
   map = L.map('map', { zoomControl: true, scrollWheelZoom: false });
@@ -46,6 +46,7 @@ function makeIcon(isLatest) {
 
 function renderMap(checkins) {
   markers.clearLayers();
+  markerMap = {};
   const geo = checkins.filter(c => c.lat != null && c.lng != null);
   if (!geo.length) { map.setView([20, 0], 2); return; }
 
@@ -59,6 +60,7 @@ function renderMap(checkins) {
       { maxWidth: 230 }
     );
     markers.addLayer(m);
+    markerMap[`${c.lat},${c.lng},${c.timestamp}`] = m;
     if (isLatest) { setTimeout(() => m.openPopup(), 300); }
   });
 
@@ -100,7 +102,12 @@ async function renderPage() {
       const el = document.createElement('div');
       el.className = 'history-item';
       if (c.lat && c.lng) {
-        el.onclick = () => { map.setView([c.lat, c.lng], 10); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        el.onclick = () => {
+          map.setView([c.lat, c.lng], 10);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          const m = markerMap[`${c.lat},${c.lng},${c.timestamp}`];
+          if (m) setTimeout(() => m.openPopup(), 350);
+        };
       }
       const thumb = c.photoUrl
         ? `<div class="history-thumb"><img src="${c.photoUrl}"></div>`

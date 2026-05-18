@@ -69,7 +69,7 @@ function renderMap(checkins) {
   geo.forEach((c, i) => {
     const isLatest = i === geo.length - 1;
     const m = L.marker([c.lat, c.lng], { icon: makeIcon(isLatest) });
-    const img = c.photoData ? `<img class="popup-img" src="${c.photoData}">` : '';
+    const img = c.photoUrl ? `<img class="popup-img" src="${c.photoUrl}">` : '';
     const cap = c.caption ? `<div class="popup-cap">${c.caption.length > 70 ? c.caption.slice(0, 70) + '…' : c.caption}</div>` : '';
     m.bindPopup(
       `<div style="min-width:160px">${img}<div class="popup-loc">${c.location}</div>${cap}<div class="popup-time">${fmtShort(c.timestamp)}</div></div>`,
@@ -106,10 +106,10 @@ async function renderPage() {
   document.getElementById('checkin-time').textContent = fmtLong(latest.timestamp);
   if (cfg.returnDate) document.getElementById('back-date').textContent = cfg.returnDate;
 
-  if (latest.photoData) {
+  if (latest.photoUrl) {
     document.getElementById('photo-placeholder').style.display = 'none';
     const img = document.getElementById('checkin-photo');
-    img.src = latest.photoData;
+    img.src = latest.photoUrl;
     img.style.display = 'block';
   }
 
@@ -123,8 +123,8 @@ async function renderPage() {
       if (c.lat && c.lng) {
         el.onclick = () => { map.setView([c.lat, c.lng], 10); window.scrollTo({ top: 0, behavior: 'smooth' }); };
       }
-      const thumb = c.photoData
-        ? `<div class="history-thumb"><img src="${c.photoData}"></div>`
+      const thumb = c.photoUrl
+        ? `<div class="history-thumb"><img src="${c.photoUrl}"></div>`
         : `<div class="history-thumb">📍</div>`;
       el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc">${c.location}</div><div class="history-cap">${c.caption || ''}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>`;
       list.appendChild(el);
@@ -212,11 +212,22 @@ async function postCheckin() {
   btn.disabled = true;
   status.innerHTML = 'Uploading…';
 
-  let photoData = null;
+  let photoUrl = null;
   if (fileInput.files[0]) {
+    if (fileInput.files[0].size > 5 * 1024 * 1024) {
+      status.innerHTML = '<span class="status-err">Photo must be under 5MB.</span>';
+      btn.disabled = false;
+      return;
+    }
     try {
-      photoData = await resizeImage(await fileToBase64(fileInput.files[0]), 1100, 0.78);
-    } catch(e) { console.warn('image err', e); }
+      status.innerHTML = 'Uploading photo…';
+      photoUrl = await uploadToCloudinary(fileInput.files[0]);
+    } catch(e) {
+      console.warn('photo upload failed', e);
+      status.innerHTML = '<span class="status-err">Photo upload failed. Try again.</span>';
+      btn.disabled = false;
+      return;
+    }
   }
 
   const entry = {
@@ -224,7 +235,7 @@ async function postCheckin() {
     lat: isNaN(lat) ? null : lat,
     lng: isNaN(lng) ? null : lng,
     caption,
-    photoData,
+    photoUrl,
     timestamp: Date.now()
   };
 
@@ -320,28 +331,16 @@ async function postCheckin() {
 })();
 
 // ── HELPERS ──
-function fileToBase64(f) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = rej;
-    r.readAsDataURL(f);
+async function uploadToCloudinary(file) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', 'ooo-paris-trip-2026');
+  const r = await fetch('https://api.cloudinary.com/v1_1/dpf8t8yta/image/upload', {
+    method: 'POST',
+    body: form
   });
-}
-
-function resizeImage(dataUrl, maxW, q) {
-  return new Promise(res => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      let w = img.width, h = img.height;
-      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      res(c.toDataURL('image/jpeg', q));
-    };
-    img.src = dataUrl;
-  });
+  if (!r.ok) throw new Error('Cloudinary upload failed');
+  return (await r.json()).secure_url;
 }
 
 // ── INIT ──

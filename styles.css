@@ -256,11 +256,12 @@ footer .admin-btn { margin-top: 28px; }
   overflow: hidden;
 }
 .jar-croissant { font-size: 1.1rem; line-height: 1; position: absolute; transform: rotate(var(--jar-r, 0deg)); }
-.jar-croissant.jar-drop { animation: jar-drop 0.4s ease-out; }
+.jar-croissant.jar-drop { animation: jar-drop 0.55s ease-in; }
 @keyframes jar-drop {
-  0%   { transform: translateY(-16px) rotate(var(--jar-r, 0deg)); opacity: 0; }
-  60%  { transform: translateY(3px) rotate(var(--jar-r, 0deg)); }
-  100% { transform: rotate(var(--jar-r, 0deg)); opacity: 1; }
+  0%   { transform: translateY(-180px) rotate(calc(var(--jar-r, 0deg) + 120deg)); }
+  70%  { transform: translateY(7px) rotate(var(--jar-r, 0deg)); }
+  85%  { transform: translateY(-3px) rotate(var(--jar-r, 0deg)); }
+  100% { transform: rotate(var(--jar-r, 0deg)); }
 }
 .jar-count { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
 .jar-btn {
@@ -272,6 +273,21 @@ footer .admin-btn { margin-top: 28px; }
 .jar-btn:hover:not(:disabled) { background: #B8B8F0; transform: translateY(-1px); }
 .jar-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
 .jar-msg { font-size: 0.78rem; color: var(--muted); min-height: 1.2em; }
+
+/* ── PAGE LOADER ── */
+#page-loader {
+  position: fixed; inset: 0; z-index: 99999;
+  background: var(--sand); display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#page-loader.hidden { opacity: 0; visibility: hidden; }
+.page-loader-inner { text-align: center; }
+.page-loader-croissant { font-size: 2.8rem; animation: loader-spin 1.2s ease-in-out infinite; }
+.page-loader-text { margin-top: 14px; font-size: 0.82rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+@keyframes loader-spin {
+  0%, 100% { transform: rotate(-15deg) scale(1); }
+  50%       { transform: rotate(15deg) scale(1.15); }
+}
 
 /* ── ADMIN OVERLAY ── */
 #admin-overlay {

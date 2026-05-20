@@ -108,6 +108,7 @@ function renderMap(checkins) {
 async function renderPage() {
   const checkins = await loadCheckins();
   document.getElementById('loading').style.display = 'none';
+  document.getElementById('page-loader').classList.add('hidden');
   _checkinByTs = {};
   checkins.forEach(c => { _checkinByTs[c.timestamp] = c; });
   renderMap(checkins);
@@ -624,6 +625,7 @@ function updateParisTime() {
 }
 
 // ── CROISSANT JAR ──
+const JAR_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 function jarRandomPos(index) {
   const perRow = 7, rowH = 15, slotW = 13;
   const row = Math.floor(index / perRow);
@@ -673,7 +675,7 @@ async function initJar() {
   } catch(e) {
     renderJarPositions(getJarPositions());
   }
-  if (localStorage.getItem('ooo_jar_last_drop') === today) {
+  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) {
     document.getElementById('jar-btn').disabled = true;
     document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
   }
@@ -681,12 +683,21 @@ async function initJar() {
 
 async function dropCroissant() {
   const today = new Date().toISOString().slice(0, 10);
-  if (localStorage.getItem('ooo_jar_last_drop') === today) return;
+  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
+
+  // Animate immediately — don't wait for server
+  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
+  positions.push(p);
+  localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
   localStorage.setItem('ooo_jar_last_drop', today);
-  document.getElementById('jar-btn').disabled = true;
-  document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  updateJarCount(positions.length);
+  if (!JAR_DEV) {
+    document.getElementById('jar-btn').disabled = true;
+    document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  }
+
   try {
     const r = await fetch('/.netlify/functions/jar', {
       method: 'POST',
@@ -696,15 +707,8 @@ async function dropCroissant() {
     if (r.ok) {
       const updated = await r.json();
       localStorage.setItem('ooo_jar_positions', JSON.stringify(updated));
-      renderJarPositions(updated);
-      return;
     }
-    if (r.status === 429) return;
   } catch(e) {}
-  positions.push(p);
-  localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
-  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
-  updateJarCount(positions.length);
 }
 
 // ── INIT ──

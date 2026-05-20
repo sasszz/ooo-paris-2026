@@ -662,7 +662,6 @@ function renderJarPositions(positions) {
 }
 
 async function initJar() {
-  const today = new Date().toISOString().slice(0, 10);
   try {
     const r = await fetch('/.netlify/functions/jar');
     if (r.ok) {
@@ -675,27 +674,20 @@ async function initJar() {
   } catch(e) {
     renderJarPositions(getJarPositions());
   }
-  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) {
-    document.getElementById('jar-btn').disabled = true;
-    document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
-  }
 }
 
 async function dropCroissant() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
 
-  // Animate immediately — don't wait for server
-  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
+  const span = makeJarSpan(p, 'jar-drop');
+  document.getElementById('jar-body').appendChild(span);
   positions.push(p);
   localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
-  localStorage.setItem('ooo_jar_last_drop', today);
   updateJarCount(positions.length);
-  if (!JAR_DEV) {
-    document.getElementById('jar-btn').disabled = true;
-    document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  if (_jarBodies) {
+    span.style.bottom = '';
+    _jarBodies.push({ el: span, x: p.x, y: 0, vx: 0, vy: 2, r: p.r });
   }
 
   try {
@@ -707,8 +699,77 @@ async function dropCroissant() {
     if (r.ok) {
       const updated = await r.json();
       localStorage.setItem('ooo_jar_positions', JSON.stringify(updated));
+    } else if (r.status === 429 && !JAR_DEV) {
+      document.getElementById('jar-btn').disabled = true;
+      document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
     }
   } catch(e) {}
+
+  if (!JAR_DEV) {
+    document.getElementById('jar-btn').disabled = true;
+    document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  }
+}
+
+// ── JAR TILT PHYSICS ──
+let _jarBodies = null;
+
+function beginJarPhysics() {
+  if (_jarBodies) return;
+  const body = document.getElementById('jar-body');
+  const H = body.clientHeight, S = 18;
+  _jarBodies = [...body.querySelectorAll('.jar-croissant')].map(el => {
+    const bottom = parseFloat(el.style.bottom) || 0;
+    const x = parseFloat(el.style.left) || 0;
+    const y = H - bottom - S;
+    const r = parseFloat((el.style.getPropertyValue('--jar-r') || '0').replace('deg', '')) || 0;
+    el.style.bottom = '';
+    el.style.top = y + 'px';
+    return { el, x, y, vx: 0, vy: 0, r };
+  });
+}
+
+function initJarTilt() {
+  if (!window.DeviceOrientationEvent) return;
+  const jarBody = document.getElementById('jar-body');
+  let tiltGamma = 0;
+
+  const onOrientation = e => {
+    tiltGamma = e.gamma || 0;
+    if (!_jarBodies && jarBody.querySelectorAll('.jar-croissant').length) beginJarPhysics();
+  };
+
+  const startListening = () => window.addEventListener('deviceorientation', onOrientation);
+
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    document.getElementById('jar-btn').addEventListener('click', () => {
+      DeviceOrientationEvent.requestPermission()
+        .then(s => { if (s === 'granted') startListening(); })
+        .catch(() => {});
+    }, { once: true });
+  } else {
+    startListening();
+  }
+
+  (function frame() {
+    if (_jarBodies && _jarBodies.length) {
+      const W = jarBody.clientWidth, H = jarBody.clientHeight, S = 18;
+      _jarBodies.forEach(b => {
+        b.vx = (b.vx + tiltGamma * 0.3) * 0.88;
+        b.vy = (b.vy + 0.6) * 0.88;
+        b.x += b.vx; b.y += b.vy;
+        if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx) * 0.5; }
+        else if (b.x > W - S) { b.x = W - S; b.vx = -Math.abs(b.vx) * 0.5; }
+        if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy) * 0.5; }
+        else if (b.y > H - S) { b.y = H - S; b.vy = -Math.abs(b.vy) * 0.5; }
+        b.r += b.vx * 2;
+        b.el.style.left = b.x + 'px';
+        b.el.style.top = b.y + 'px';
+        b.el.style.setProperty('--jar-r', b.r + 'deg');
+      });
+    }
+    requestAnimationFrame(frame);
+  })();
 }
 
 // ── INIT ──
@@ -716,5 +777,6 @@ initMap();
 renderPage();
 rainCroissants();
 initJar();
+initJarTilt();
 updateParisTime();
 setInterval(updateParisTime, 1000);

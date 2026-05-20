@@ -80,10 +80,8 @@ header .flip-label { color: var(--muted); }
   display: none;
   position: fixed; right: 16px; top: 50%; transform: translateY(-50%); z-index: 9999;
   width: 48px; height: 48px; border-radius: 50%;
-  background: rgba(255,255,255,0.18);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.45);
+  background: #B8B8F0;
+  border: 1px solid var(--warm);
   box-shadow:
     0 6px 24px rgba(0,0,0,0.18),
     inset 0 1px 0 rgba(255,255,255,0.65),
@@ -94,8 +92,8 @@ header .flip-label { color: var(--muted); }
   content: '';
   display: block;
   width: 11px; height: 11px;
-  border-right: 2.5px solid rgba(0,0,0,0.75);
-  border-bottom: 2.5px solid rgba(0,0,0,0.75);
+  border-right: 2.5px solid var(--ink);
+  border-bottom: 2.5px solid var(--ink);
   transform: rotate(45deg) translate(-1px, -2px);
   border-radius: 1px;
 }

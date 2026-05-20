@@ -1,7 +1,5 @@
-// ── CONFIG ──
-const ADMIN_PASSWORD = 'wesley2026';
-
 // ── DATA ──
+let sessionToken = null;
 async function loadCheckins() {
   try {
     const r = await fetch('/.netlify/functions/checkins');
@@ -16,7 +14,7 @@ async function saveCheckins(list) {
   try {
     await fetch('/.netlify/functions/checkins', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': ADMIN_PASSWORD },
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': sessionToken },
       body: JSON.stringify(list)
     });
   } catch(e) { console.warn('checkins save failed'); }
@@ -217,12 +215,23 @@ function showPostView() {
   document.getElementById('post-view').style.display = 'block';
 }
 
-function doLogin() {
-  if (document.getElementById('pw-input').value === ADMIN_PASSWORD) {
-    unlocked = true;
-    showPostView();
-  } else {
-    document.getElementById('login-status').textContent = 'Incorrect password.';
+async function doLogin() {
+  const password = document.getElementById('pw-input').value;
+  try {
+    const r = await fetch('/.netlify/functions/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    if (r.ok) {
+      ({ token: sessionToken } = await r.json());
+      unlocked = true;
+      showPostView();
+    } else {
+      document.getElementById('login-status').textContent = 'Incorrect password.';
+    }
+  } catch(e) {
+    document.getElementById('login-status').textContent = 'Login failed. Try again.';
   }
 }
 
@@ -520,7 +529,19 @@ function startBouncingCroissant() {
   const el = document.createElement('div');
   el.id = 'bouncing-croissant';
   el.textContent = '🥐';
-  el.addEventListener('pointerdown', e => { e.stopPropagation(); openCroissantPopup(); });
+  let escapes = 0;
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (escapes >= 2) { openCroissantPopup(); return; }
+    escapes++;
+    const rect = el.getBoundingClientRect();
+    const dx = (rect.left + rect.width / 2) - e.clientX;
+    const dy = (rect.top + rect.height / 2) - e.clientY;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const speed = 14 + escapes * 7;
+    vx = (dx / len) * speed;
+    vy = (dy / len) * speed;
+  });
   document.body.appendChild(el);
 
   const size = 52;
@@ -530,7 +551,10 @@ function startBouncingCroissant() {
   let vy = (Math.random() > 0.5 ? 1 : -1) * 1.1;
   let angle = 0;
 
+  const baseSpeed = 1.1;
+  const baseSpeedSq = baseSpeed * baseSpeed;
   function frame() {
+    if (vx * vx + vy * vy > baseSpeedSq) { vx *= 0.99; vy *= 0.99; }
     x += vx;
     y += vy;
     angle += 1.2;
@@ -570,7 +594,7 @@ function rainCroissants() {
   const mapWrap = document.getElementById('map-wrap');
   if (window.matchMedia('(max-width:900px)').matches) {
     new IntersectionObserver(([entry]) => {
-      btn.style.display = entry.isIntersecting ? 'flex' : 'none';
+      btn.classList.toggle('visible', entry.isIntersecting);
     }, { threshold: 0.1 }).observe(mapWrap);
   }
 })();
@@ -594,13 +618,71 @@ function updateParisTime() {
   const emoji = isNight ? '🌙' : '☀️';
 
   const el = document.getElementById('paris-time');
-  if (el) el.textContent = `${emoji} it's ${timeStr} where Lucie is`;
+  const text = `${emoji} it's ${timeStr} where Lucie is`;
+  if (el && el.textContent !== text) el.textContent = text;
   document.body.classList.toggle('night', isNight);
+}
+
+// ── CROISSANT JAR ──
+function jarRandomPos(index) {
+  const perRow = 7, rowH = 15, slotW = 13;
+  const row = Math.floor(index / perRow);
+  const col = index % perRow;
+  return {
+    x: Math.round(col * slotW + Math.random() * 4 - 2),
+    y: Math.round(row * rowH + Math.random() * 3),
+    r: Math.round(Math.random() * 40 - 20)
+  };
+}
+
+function getJarPositions() {
+  return JSON.parse(localStorage.getItem('ooo_jar_positions') || '[]');
+}
+
+function makeJarSpan(p, extraClass) {
+  const span = document.createElement('span');
+  span.className = extraClass ? `jar-croissant ${extraClass}` : 'jar-croissant';
+  span.style.cssText = `left:${p.x}px;bottom:${p.y}px;--jar-r:${p.r}deg`;
+  span.textContent = '🥐';
+  return span;
+}
+
+function updateJarCount(count) {
+  const el = document.getElementById('jar-count');
+  el.textContent = count === 0 ? 'The jar is empty…' : count === 1 ? '1 croissant in the jar' : `${count} croissants in the jar`;
+}
+
+function initJar() {
+  const positions = getJarPositions();
+  const body = document.getElementById('jar-body');
+  body.innerHTML = '';
+  positions.forEach(p => body.appendChild(makeJarSpan(p)));
+  updateJarCount(positions.length);
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('ooo_jar_last_drop') === today) {
+    document.getElementById('jar-btn').disabled = true;
+    document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
+  }
+}
+
+function dropCroissant() {
+  const today = new Date().toISOString().slice(0, 10);
+  // if (localStorage.getItem('ooo_jar_last_drop') === today) return; // disabled for testing
+  const positions = getJarPositions();
+  const p = jarRandomPos(positions.length);
+  positions.push(p);
+  localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
+  localStorage.setItem('ooo_jar_last_drop', today);
+  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
+  updateJarCount(positions.length);
+  // document.getElementById('jar-btn').disabled = true; // disabled for testing
+  // document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐'; // disabled for testing
 }
 
 // ── INIT ──
 initMap();
 renderPage();
 rainCroissants();
+initJar();
 updateParisTime();
-setInterval(updateParisTime, 60000);
+setInterval(updateParisTime, 1000);

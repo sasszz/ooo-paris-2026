@@ -1,225 +1,308 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lucie is OOO</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥐</text></svg>">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lucie is OOO</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥐</text></svg>"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="header-title">I'm currently <em>OOO</em></div>
+        <div class="header-sub">— Lucie</div>
+        <div id="paris-time"></div>
+      </div>
+      <div class="intro-countdown">
+        <div class="countdown-back-text">back in</div>
+        <div class="countdown-wrap">
+          <div class="flip-unit">
+            <div class="flip-card" id="flip-days">
+              <div class="flip-upper"><span>00</span></div>
+              <div class="flip-lower"><span>00</span></div>
+              <div class="flip-fold-top"><span>00</span></div>
+              <div class="flip-fold-bot"><span>00</span></div>
+            </div>
+            <div class="flip-label">days</div>
+          </div>
+          <div class="flip-sep">:</div>
+          <div class="flip-unit">
+            <div class="flip-card" id="flip-hours">
+              <div class="flip-upper"><span>00</span></div>
+              <div class="flip-lower"><span>00</span></div>
+              <div class="flip-fold-top"><span>00</span></div>
+              <div class="flip-fold-bot"><span>00</span></div>
+            </div>
+            <div class="flip-label">hrs</div>
+          </div>
+          <div class="flip-sep">:</div>
+          <div class="flip-unit">
+            <div class="flip-card" id="flip-mins">
+              <div class="flip-upper"><span>00</span></div>
+              <div class="flip-lower"><span>00</span></div>
+              <div class="flip-fold-top"><span>00</span></div>
+              <div class="flip-fold-bot"><span>00</span></div>
+            </div>
+            <div class="flip-label">min</div>
+          </div>
+          <div class="flip-sep">:</div>
+          <div class="flip-unit">
+            <div class="flip-card" id="flip-secs">
+              <div class="flip-upper"><span>00</span></div>
+              <div class="flip-lower"><span>00</span></div>
+              <div class="flip-fold-top"><span>00</span></div>
+              <div class="flip-fold-bot"><span>00</span></div>
+            </div>
+            <div class="flip-label">sec</div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-<header>
-  <div>
-    <div class="header-title">I'm currently <em>OOO</em></div>
-    <div class="header-sub">— Lucie</div>
-    <div id="paris-time"></div>
-  </div>
-  <div class="intro-countdown">
-    <div class="countdown-back-text">back in</div>
-    <div class="countdown-wrap">
-      <div class="flip-unit">
-        <div class="flip-card" id="flip-days">
-          <div class="flip-upper"><span>00</span></div>
-          <div class="flip-lower"><span>00</span></div>
-          <div class="flip-fold-top"><span>00</span></div>
-          <div class="flip-fold-bot"><span>00</span></div>
-        </div>
-        <div class="flip-label">days</div>
+    <div id="map-wrap">
+      <div class="map-badge" id="map-badge"></div>
+      <div id="map"></div>
+    </div>
+    <button
+      id="map-scroll-btn"
+      onclick="
+        document.querySelector('main').scrollIntoView({ behavior: 'smooth' })
+      "
+      aria-label="Scroll past map"
+    ></button>
+
+    <main>
+      <div class="intro-card">
+        <p>
+          Hello! I'm currently <strong>out of office</strong> starting <strong>May 29th</strong>. I'll
+          be back by <strong>Monday, June 22nd</strong>. I am traveling with
+          family, celebrating my friend's wedding as her bridesmaid,
+          reconnecting with my French family and heritage, eating lots of
+          croissants and getting married myself to my BFF on
+          <strong>June 14th</strong>! I'll be posting updates regularly here, so
+          stay tuned and follow along!
+        </p>
       </div>
-      <div class="flip-sep">:</div>
-      <div class="flip-unit">
-        <div class="flip-card" id="flip-hours">
-          <div class="flip-upper"><span>00</span></div>
-          <div class="flip-lower"><span>00</span></div>
-          <div class="flip-fold-top"><span>00</span></div>
-          <div class="flip-fold-bot"><span>00</span></div>
-        </div>
-        <div class="flip-label">hrs</div>
+
+      <div id="loading">
+        <div class="loader"></div>
+        Loading check-ins…
       </div>
-      <div class="flip-sep">:</div>
-      <div class="flip-unit">
-        <div class="flip-card" id="flip-mins">
-          <div class="flip-upper"><span>00</span></div>
-          <div class="flip-lower"><span>00</span></div>
-          <div class="flip-fold-top"><span>00</span></div>
-          <div class="flip-fold-bot"><span>00</span></div>
+
+      <div id="latest-section" style="display: none">
+        <div class="section-label">Latest check-in</div>
+        <div id="checkin-card">
+          <div id="photo-wrap">
+            <div class="photo-placeholder" id="photo-placeholder">🏝️</div>
+            <img
+              class="checkin-photo"
+              id="checkin-photo"
+              src=""
+              alt=""
+              style="display: none"
+            />
+          </div>
+          <div class="checkin-body">
+            <div class="checkin-meta">
+              <div class="pin-dot"></div>
+              <div class="checkin-location" id="checkin-location"></div>
+            </div>
+            <div class="checkin-caption" id="checkin-caption"></div>
+            <div
+              class="checkin-croissants"
+              id="checkin-croissants"
+              style="display: none"
+            ></div>
+            <div class="checkin-footer">
+              <div class="checkin-time" id="checkin-time"></div>
+            </div>
+          </div>
         </div>
-        <div class="flip-label">min</div>
       </div>
-      <div class="flip-sep">:</div>
-      <div class="flip-unit">
-        <div class="flip-card" id="flip-secs">
-          <div class="flip-upper"><span>00</span></div>
-          <div class="flip-lower"><span>00</span></div>
-          <div class="flip-fold-top"><span>00</span></div>
-          <div class="flip-fold-bot"><span>00</span></div>
+
+      <div id="history-section" style="display: none">
+        <div class="section-label" style="margin-top: 32px">All stops</div>
+        <div id="history-list"></div>
+      </div>
+
+      <div id="empty-state">
+        <div class="empty-icon">✈️</div>
+        <div class="empty-title">I'm out of office!</div>
+        <div class="empty-sub">
+          Check back soon for my first update from the road.
         </div>
-        <div class="flip-label">sec</div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="jar-section">
+        <div class="jar-section-text">
+          <strong>Drop a croissant in the jar</strong>
+          <p>Free, no strings attached. One per day.</p>
+        </div>
+        <div class="jar-wrap">
+          <div class="jar-lid"></div>
+          <div class="jar-neck"></div>
+          <div class="jar-body" id="jar-body"></div>
+        </div>
+        <div class="jar-count" id="jar-count">The jar is empty…</div>
+        <button class="jar-btn" id="jar-btn" onclick="dropCroissant()">
+          Drop a 🥐
+        </button>
+        <div class="jar-msg" id="jar-msg"></div>
+      </div>
+
+      <hr class="footer-divider" />
+      <p>Imagineered by Lucie Chevreuil</p>
+      <p>
+        <a href="https://github.com/sasszz/ooo-paris-2026" target="_blank"
+          >Github Repository</a
+        >
+      </p>
+      <button class="admin-btn" onclick="openAdmin()">
+        Lucie only - Post update
+      </button>
+    </footer>
+
+    <!-- ADMIN OVERLAY -->
+    <div id="admin-overlay">
+      <div class="admin-panel">
+        <button class="admin-close" onclick="closeAdmin()">×</button>
+        <div class="admin-title">Post a check-in</div>
+        <div class="admin-sub">✦ For Lucie's eyes only ✦</div>
+
+        <!-- Login view -->
+        <div id="login-view">
+          <div class="login-section">
+            <div class="field">
+              <label>Password</label>
+              <input
+                type="password"
+                id="pw-input"
+                placeholder="ay what are you doing here ¬‿¬"
+                onkeydown="if (event.key === 'Enter') doLogin();"
+              />
+            </div>
+            <button class="btn-primary" onclick="doLogin()">Unlock</button>
+            <div
+              id="login-status"
+              style="
+                margin-top: 10px;
+                font-size: 0.82rem;
+                color: #c0392b;
+                text-align: center;
+              "
+            ></div>
+          </div>
+        </div>
+
+        <!-- Post view -->
+        <div id="post-view" style="display: none">
+          <div class="field">
+            <label>Location</label>
+            <div class="location-autocomplete">
+              <input
+                type="text"
+                id="post-location"
+                placeholder="e.g. Eiffel Tower, Paris"
+                autocomplete="off"
+              />
+              <ul id="location-suggestions" class="suggestions-list"></ul>
+            </div>
+          </div>
+          <div class="field">
+            <label>Coordinates (for map pin)</label>
+            <div class="coord-row">
+              <input type="text" id="post-lat" placeholder="Latitude" />
+              <input type="text" id="post-lng" placeholder="Longitude" />
+            </div>
+            <div class="coord-hint">
+              Type a place name above and select it — coordinates fill in
+              automatically.
+            </div>
+          </div>
+          <div class="field">
+            <label>Caption</label>
+            <textarea
+              id="post-caption"
+              placeholder="What's happening? Any highlights?"
+            ></textarea>
+          </div>
+          <div class="field">
+            <label>🥐 Croissants eaten</label>
+            <div class="croissant-stepper">
+              <button type="button" onclick="adjustCroissants(-1)">−</button>
+              <span id="croissant-count">0</span>
+              <button type="button" onclick="adjustCroissants(1)">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Photo</label>
+            <div class="photo-upload-area">
+              <input
+                type="file"
+                id="photo-file"
+                accept="image/*"
+                onchange="previewPhoto(event)"
+              />
+              <div class="upload-icon">📷</div>
+              <div class="upload-text">Tap to choose a photo</div>
+              <img id="preview-img" src="" alt="Preview" />
+            </div>
+          </div>
+          <button class="btn-primary" id="post-btn" onclick="postCheckin()">
+            📍 Post Check-in
+          </button>
+          <div id="post-status"></div>
+        </div>
       </div>
     </div>
-  </div>
-</header>
 
-<div id="map-wrap">
-  <div class="map-badge" id="map-badge"></div>
-  <div id="map"></div>
-</div>
-<button id="map-scroll-btn" onclick="document.querySelector('main').scrollIntoView({behavior:'smooth'})" aria-label="Scroll past map"></button>
-
-<main>
-
-  <div class="intro-card">
-    <p>Hello! I'm currently <strong>out of office</strong> and <strong>off the grid</strong> starting <strong>May 29th</strong>. I'll be back by <strong>Monday, June 22nd</strong>. I am traveling with family, celebrating my friend's wedding as her bridesmaid, reconnecting with my French family and heritage, eating lots of croissants and getting married myself to my BFF on <strong>June 14th</strong>! I'll be posting updates regularly here, so stay tuned and follow along!</p>
-  </div>
-
-  <div id="loading">
-    <div class="loader"></div>
-    Loading check-ins…
-  </div>
-
-  <div id="latest-section" style="display:none">
-    <div class="section-label">Latest check-in</div>
-    <div id="checkin-card">
-      <div id="photo-wrap">
-        <div class="photo-placeholder" id="photo-placeholder">🏝️</div>
-        <img class="checkin-photo" id="checkin-photo" src="" alt="" style="display:none">
-      </div>
-      <div class="checkin-body">
-        <div class="checkin-meta">
-          <div class="pin-dot"></div>
-          <div class="checkin-location" id="checkin-location"></div>
-        </div>
-        <div class="checkin-caption" id="checkin-caption"></div>
-        <div class="checkin-croissants" id="checkin-croissants" style="display:none"></div>
-        <div class="checkin-footer">
-          <div class="checkin-time" id="checkin-time"></div>
+    <div id="croissant-popup" onclick="closeCroissantPopup()">
+      <button id="croissant-popup-close" onclick="closeCroissantPopup()">
+        ×
+      </button>
+      <div id="croissant-popup-inner" onclick="event.stopPropagation()">
+        <div id="croissant-popup-hero">🥐</div>
+        <div id="croissant-popup-body">
+          <div id="croissant-popup-msg"></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div id="history-section" style="display:none">
-    <div class="section-label" style="margin-top:32px">All stops</div>
-    <div id="history-list"></div>
-  </div>
-
-  <div id="empty-state">
-    <div class="empty-icon">✈️</div>
-    <div class="empty-title">I'm out of office!</div>
-    <div class="empty-sub">Check back soon for my first update from the road.</div>
-  </div>
-
-</main>
-
-<footer>
-  <div class="coffee-box">
-    <div class="coffee-emoji">☕</div>
-    <div class="coffee-text">
-      <strong>Enjoying the trip updates?</strong>
-      <p>I built this app during wedding and trip prep. It was important to me to share my journey and why I'll be away. If it made you smile, a coffee would mean a lot!</p>
-    </div>
-    <a class="coffee-btn" href="https://buymeacoffee.com/lucieshevroy" target="_blank">Buy me a coffee</a>
-  </div>
-  <p>Built in <a href="https://code.visualstudio.com" target="_blank"><strong>VS Code</strong></a> with <a href="https://claude.ai/code" target="_blank"><strong>Claude Code</strong></a> · Deployed on <a href="https://netlify.com" target="_blank"><strong>Netlify</strong></a> · Data stored with <a href="https://jsonbin.io" target="_blank"><strong>JSONBin.io</strong></a> · Photos hosted on <a href="https://cloudinary.com" target="_blank"><strong>Cloudinary</strong></a></p>
-  <hr class="footer-divider">
-  <p>Imagineered by Lucie Chevreuil, frontend developer · <a href="https://github.com/sasszz" target="_blank">github.com/sasszz</a></p>
-  <button class="admin-btn" onclick="openAdmin()">Lucie only - Post update</button>
-</footer>
-
-<!-- ADMIN OVERLAY -->
-<div id="admin-overlay">
-  <div class="admin-panel">
-    <button class="admin-close" onclick="closeAdmin()">×</button>
-    <div class="admin-title">Post a check-in</div>
-    <div class="admin-sub">✦ For Lucie's eyes only ✦</div>
-
-    <!-- Login view -->
-    <div id="login-view">
-      <div class="login-section">
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="pw-input" placeholder="good luck trying to get in ¬‿¬" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="lightbox" onclick="closeLightbox()">
+      <button id="lightbox-close" onclick="closeLightbox()">×</button>
+      <div id="lightbox-post" onclick="event.stopPropagation()">
+        <img id="lightbox-img" src="" alt="" />
+        <div class="lightbox-body">
+          <div class="lightbox-meta">
+            <div class="pin-dot"></div>
+            <div class="lightbox-location" id="lightbox-location"></div>
+          </div>
+          <div class="lightbox-caption" id="lightbox-caption"></div>
+          <div
+            class="post-croissants"
+            id="lightbox-croissants"
+            style="display: none"
+          ></div>
+          <div class="lightbox-time" id="lightbox-time"></div>
         </div>
-        <button class="btn-primary" onclick="doLogin()">Unlock</button>
-        <div id="login-status" style="margin-top:10px;font-size:0.82rem;color:#c0392b;text-align:center"></div>
       </div>
     </div>
 
-    <!-- Post view -->
-    <div id="post-view" style="display:none">
-      <div class="field">
-        <label>Location</label>
-        <div class="location-autocomplete">
-          <input type="text" id="post-location" placeholder="e.g. Eiffel Tower, Paris" autocomplete="off">
-          <ul id="location-suggestions" class="suggestions-list"></ul>
-        </div>
-      </div>
-      <div class="field">
-        <label>Coordinates (for map pin)</label>
-        <div class="coord-row">
-          <input type="text" id="post-lat" placeholder="Latitude">
-          <input type="text" id="post-lng" placeholder="Longitude">
-        </div>
-        <div class="coord-hint">Type a place name above and select it — coordinates fill in automatically.</div>
-      </div>
-      <div class="field">
-        <label>Caption</label>
-        <textarea id="post-caption" placeholder="What's happening? Any highlights?"></textarea>
-      </div>
-      <div class="field">
-        <label>🥐 Croissants eaten</label>
-        <div class="croissant-stepper">
-          <button type="button" onclick="adjustCroissants(-1)">−</button>
-          <span id="croissant-count">0</span>
-          <button type="button" onclick="adjustCroissants(1)">+</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Photo</label>
-        <div class="photo-upload-area">
-          <input type="file" id="photo-file" accept="image/*" onchange="previewPhoto(event)">
-          <div class="upload-icon">📷</div>
-          <div class="upload-text">Tap to choose a photo</div>
-          <img id="preview-img" src="" alt="Preview">
-        </div>
-      </div>
-      <button class="btn-primary" id="post-btn" onclick="postCheckin()">📍 Post Check-in</button>
-      <div id="post-status"></div>
-    </div>
-
-  </div>
-</div>
-
-<div id="croissant-popup" onclick="closeCroissantPopup()">
-  <button id="croissant-popup-close" onclick="closeCroissantPopup()">×</button>
-  <div id="croissant-popup-inner" onclick="event.stopPropagation()">
-    <div id="croissant-popup-hero">🥐</div>
-    <div id="croissant-popup-body">
-      <div id="croissant-popup-msg"></div>
-    </div>
-  </div>
-</div>
-
-<div id="lightbox" onclick="closeLightbox()">
-  <button id="lightbox-close" onclick="closeLightbox()">×</button>
-  <div id="lightbox-post" onclick="event.stopPropagation()">
-    <img id="lightbox-img" src="" alt="">
-    <div class="lightbox-body">
-      <div class="lightbox-meta">
-        <div class="pin-dot"></div>
-        <div class="lightbox-location" id="lightbox-location"></div>
-      </div>
-      <div class="lightbox-caption" id="lightbox-caption"></div>
-      <div class="post-croissants" id="lightbox-croissants" style="display:none"></div>
-      <div class="lightbox-time" id="lightbox-time"></div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="script.js"></script>
-</body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>

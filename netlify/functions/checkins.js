@@ -1,3 +1,4 @@
+const crypto  = require('crypto');
 const BIN_ID  = process.env.JSONBIN_BIN_ID;
 const API_KEY = process.env.JSONBIN_API_KEY;
 
@@ -16,7 +17,8 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'PUT') {
-    if (event.headers['x-admin-password'] !== process.env.ADMIN_PASSWORD) {
+    const expected = crypto.createHmac('sha256', process.env.ADMIN_PASSWORD).update('session').digest('hex');
+    if (event.headers['x-session-token'] !== expected) {
       return { statusCode: 401, body: 'Unauthorized' };
     }
     const r = await fetch(base, {

@@ -667,7 +667,7 @@ function initJar() {
 
 function dropCroissant() {
   const today = new Date().toISOString().slice(0, 10);
-  // if (localStorage.getItem('ooo_jar_last_drop') === today) return; // disabled for testing
+  if (localStorage.getItem('ooo_jar_last_drop') === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
   positions.push(p);
@@ -675,8 +675,8 @@ function dropCroissant() {
   localStorage.setItem('ooo_jar_last_drop', today);
   document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
   updateJarCount(positions.length);
-  // document.getElementById('jar-btn').disabled = true; // disabled for testing
-  // document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐'; // disabled for testing
+  document.getElementById('jar-btn').disabled = true;
+  document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
 }
 
 // ── INIT ──

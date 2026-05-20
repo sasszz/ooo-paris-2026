@@ -1,3 +1,6 @@
+history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 // ── DATA ──
 let sessionToken = null;
 async function loadCheckins() {
@@ -641,10 +644,9 @@ function getJarPositions() {
   return JSON.parse(localStorage.getItem('ooo_jar_positions') || '[]');
 }
 
-function makeJarSpan(p, extraClass) {
+function makeJarSpan(extraClass) {
   const span = document.createElement('span');
   span.className = extraClass ? `jar-croissant ${extraClass}` : 'jar-croissant';
-  span.style.cssText = `left:${p.x}px;bottom:${p.y}px;--jar-r:${p.r}deg`;
   span.textContent = '🥐';
   return span;
 }
@@ -657,11 +659,12 @@ function updateJarCount(count) {
 function renderJarPositions(positions) {
   const body = document.getElementById('jar-body');
   body.innerHTML = '';
-  positions.forEach(p => body.appendChild(makeJarSpan(p)));
+  positions.forEach(() => body.appendChild(makeJarSpan()));
   updateJarCount(positions.length);
 }
 
 async function initJar() {
+  const today = new Date().toISOString().slice(0, 10);
   try {
     const r = await fetch('/.netlify/functions/jar');
     if (r.ok) {
@@ -674,20 +677,34 @@ async function initJar() {
   } catch(e) {
     renderJarPositions(getJarPositions());
   }
+  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) {
+    document.getElementById('jar-btn').disabled = true;
+    document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
+  }
+  requestAnimationFrame(() => requestAnimationFrame(beginJarPhysics));
 }
 
 async function dropCroissant() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!JAR_DEV && localStorage.getItem('ooo_jar_last_drop') === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
 
-  const span = makeJarSpan(p, 'jar-drop');
-  document.getElementById('jar-body').appendChild(span);
+  const span = makeJarSpan();
+  const jarBody = document.getElementById('jar-body');
+  jarBody.appendChild(span);
   positions.push(p);
   localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
+  localStorage.setItem('ooo_jar_last_drop', today);
   updateJarCount(positions.length);
   if (_jarBodies) {
-    span.style.bottom = '';
-    _jarBodies.push({ el: span, x: p.x, y: 0, vx: 0, vy: 2, r: p.r });
+    const W = jarBody.clientWidth || 110, S = 18;
+    const startX = Math.random() * (W - S);
+    const r = Math.random() * 360;
+    span.style.left = '0';
+    span.style.top  = '0';
+    span.style.transform = `translate3d(${startX}px,0px,0) rotate(${r}deg)`;
+    _jarBodies.push({ el: span, x: startX, y: 0, vx: (Math.random() - 0.5), vy: 1, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 });
   }
 
   try {
@@ -699,11 +716,7 @@ async function dropCroissant() {
     if (r.ok) {
       const updated = await r.json();
       localStorage.setItem('ooo_jar_positions', JSON.stringify(updated));
-    } else if (r.status === 429 && !JAR_DEV) {
-      document.getElementById('jar-btn').disabled = true;
-      document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
-    }
-  } catch(e) {}
+    } } catch(e) {}
 
   if (!JAR_DEV) {
     document.getElementById('jar-btn').disabled = true;
@@ -713,63 +726,114 @@ async function dropCroissant() {
 
 // ── JAR TILT PHYSICS ──
 let _jarBodies = null;
+let _jarGX = 0, _jarGY = 0;
+let _jarLastTilt = Date.now(), _jarPrevGamma = 0, _jarPrevBeta = 90;
 
 function beginJarPhysics() {
   if (_jarBodies) return;
   const body = document.getElementById('jar-body');
-  const H = body.clientHeight, S = 18;
-  _jarBodies = [...body.querySelectorAll('.jar-croissant')].map(el => {
-    const bottom = parseFloat(el.style.bottom) || 0;
-    const x = parseFloat(el.style.left) || 0;
-    const y = H - bottom - S;
-    const r = parseFloat((el.style.getPropertyValue('--jar-r') || '0').replace('deg', '')) || 0;
-    el.style.bottom = '';
-    el.style.top = y + 'px';
-    return { el, x, y, vx: 0, vy: 0, r };
+  const W = body.clientWidth, H = body.clientHeight;
+  if (W < 10 || H < 10) { requestAnimationFrame(beginJarPhysics); return; }
+  const S = 18;
+  const MAX_BODIES = 30;
+  _jarBodies = [...body.querySelectorAll('.jar-croissant')].slice(-MAX_BODIES).map(el => {
+    const x = Math.random() * (W - S);
+    const y = Math.random() * (H - S);
+    const r = Math.random() * 360;
+    el.style.left = '0';
+    el.style.top  = '0';
+    el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${r}deg)`;
+    return { el, x, y, vx: (Math.random() - 0.5) * 2.5, vy: (Math.random() - 0.5) * 2.5, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 };
   });
+  const observer = new IntersectionObserver(([entry]) => {
+    _jarVisible = entry.isIntersecting;
+    if (_jarVisible) requestAnimationFrame(jarPhysicsFrame);
+  }, { threshold: 0.1 });
+  observer.observe(body);
+  requestAnimationFrame(jarPhysicsFrame);
+}
+
+let _jarVisible = true;
+function jarPhysicsFrame() {
+  if (!_jarBodies || !_jarVisible) return;
+  const body = document.getElementById('jar-body');
+  const W = body.clientWidth, H = body.clientHeight, S = 18;
+  const idleMs = Date.now() - _jarLastTilt;
+  const energy = idleMs < 3000 ? 1 : Math.max(0, 1 - (idleMs - 3000) / 5000);
+  const WANDER = 0.0015 * energy, TILT = 0.018;
+  const damp = 0.9985 - (1 - energy) * 0.11; // 0.9985 active → 0.8885 at rest
+
+  _jarBodies.forEach(b => {
+    b.wa += b.waDelta;
+    b.vx += Math.cos(b.wa) * WANDER + _jarGX * TILT;
+    b.vy += Math.sin(b.wa) * WANDER + _jarGY * TILT;
+    b.vx *= damp;
+    b.vy *= damp;
+  });
+
+  for (let i = 0; i < _jarBodies.length; i++) {
+    for (let j = i + 1; j < _jarBodies.length; j++) {
+      const a = _jarBodies[i], b = _jarBodies[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      if (d < S) {
+        const push = (S - d) * 0.04;
+        const nx = dx / d, ny = dy / d;
+        a.vx -= nx * push; a.vy -= ny * push;
+        b.vx += nx * push; b.vy += ny * push;
+      }
+    }
+  }
+
+  // Soft wall repulsion — push away from edges before hitting them
+  const WALL_R = 18, WALL_F = 0.004;
+  _jarBodies.forEach(b => {
+    if (b.x < WALL_R)          b.vx += (WALL_R - b.x)          / WALL_R * WALL_F;
+    if (b.x > W - S - WALL_R)  b.vx -= (b.x - (W - S - WALL_R)) / WALL_R * WALL_F;
+    if (b.y < WALL_R)          b.vy += (WALL_R - b.y)          / WALL_R * WALL_F;
+    if (b.y > H - S - WALL_R)  b.vy -= (b.y - (H - S - WALL_R)) / WALL_R * WALL_F;
+  });
+
+  _jarBodies.forEach(b => {
+    b.x += b.vx;
+    b.y += b.vy;
+    if (b.x < 0)     { b.x = 0;     b.vx =  Math.abs(b.vx) * 0.3; }
+    if (b.x > W - S) { b.x = W - S; b.vx = -Math.abs(b.vx) * 0.3; }
+    if (b.y < 0)     { b.y = 0;     b.vy =  Math.abs(b.vy) * 0.3; }
+    if (b.y > H - S) { b.y = H - S; b.vy = -Math.abs(b.vy) * 0.3; }
+    b.r += b.vx * 1.2;
+    b.el.style.transform = `translate3d(${b.x}px,${b.y}px,0) rotate(${b.r}deg)`;
+  });
+
+  requestAnimationFrame(jarPhysicsFrame);
 }
 
 function initJarTilt() {
-  if (!window.DeviceOrientationEvent) return;
-  const jarBody = document.getElementById('jar-body');
-  let tiltGamma = 0;
-
-  const onOrientation = e => {
-    tiltGamma = e.gamma || 0;
-    if (!_jarBodies && jarBody.querySelectorAll('.jar-croissant').length) beginJarPhysics();
+  const listen = () => {
+    window.addEventListener('deviceorientation', e => {
+      const gamma = e.gamma || 0;
+      const beta  = e.beta != null ? e.beta : 90;
+      const g = gamma * Math.PI / 180;
+      const b = (beta - 90) * Math.PI / 180;
+      _jarGX = Math.sin(g);
+      _jarGY = Math.cos(g) * Math.cos(b);
+      if (Math.abs(gamma - _jarPrevGamma) > 0.5 || Math.abs(beta - _jarPrevBeta) > 0.5) {
+        _jarLastTilt = Date.now();
+        _jarPrevGamma = gamma;
+        _jarPrevBeta  = beta;
+      }
+    });
   };
 
-  const startListening = () => window.addEventListener('deviceorientation', onOrientation);
-
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
     document.getElementById('jar-btn').addEventListener('click', () => {
       DeviceOrientationEvent.requestPermission()
-        .then(s => { if (s === 'granted') startListening(); })
+        .then(s => { if (s === 'granted') listen(); })
         .catch(() => {});
     }, { once: true });
   } else {
-    startListening();
+    listen();
   }
-
-  (function frame() {
-    if (_jarBodies && _jarBodies.length) {
-      const W = jarBody.clientWidth, H = jarBody.clientHeight, S = 18;
-      _jarBodies.forEach(b => {
-        b.vx = (b.vx + tiltGamma * 0.3) * 0.88;
-        b.vy = (b.vy + 0.6) * 0.88;
-        b.x += b.vx; b.y += b.vy;
-        if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx) * 0.5; }
-        else if (b.x > W - S) { b.x = W - S; b.vx = -Math.abs(b.vx) * 0.5; }
-        if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy) * 0.5; }
-        else if (b.y > H - S) { b.y = H - S; b.vy = -Math.abs(b.vy) * 0.5; }
-        b.r += b.vx * 2;
-        b.el.style.left = b.x + 'px';
-        b.el.style.top = b.y + 'px';
-        b.el.style.setProperty('--jar-r', b.r + 'deg');
-      });
-    }
-    requestAnimationFrame(frame);
-  })();
 }
 
 // ── INIT ──

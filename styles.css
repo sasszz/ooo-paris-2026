@@ -78,7 +78,7 @@ header .flip-label { color: var(--muted); }
 #map { width: 100%; height: 100%; }
 #map-scroll-btn {
   display: none;
-  position: fixed; right: 16px; top: 50%; transform: translateY(-50%); z-index: 9999;
+  position: fixed; right: 16px; top: 66.67%; transform: translateY(-50%); z-index: 9999;
   width: 48px; height: 48px; border-radius: 50%;
   background: #B8B8F0;
   border: 1px solid var(--warm);
@@ -254,13 +254,6 @@ footer .admin-btn { margin-top: 28px; }
   overflow: hidden;
 }
 .jar-croissant { font-size: 1.1rem; line-height: 1; position: absolute; transform: rotate(var(--jar-r, 0deg)); }
-.jar-croissant.jar-drop { animation: jar-drop 0.55s ease-in; }
-@keyframes jar-drop {
-  0%   { transform: translateY(-180px) rotate(calc(var(--jar-r, 0deg) + 120deg)); }
-  70%  { transform: translateY(7px) rotate(var(--jar-r, 0deg)); }
-  85%  { transform: translateY(-3px) rotate(var(--jar-r, 0deg)); }
-  100% { transform: rotate(var(--jar-r, 0deg)); }
-}
 .jar-count { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
 .jar-btn {
   background: var(--warm); color: var(--ink);

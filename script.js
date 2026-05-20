@@ -652,31 +652,59 @@ function updateJarCount(count) {
   el.textContent = count === 0 ? 'The jar is empty…' : count === 1 ? '1 croissant in the jar' : `${count} croissants in the jar`;
 }
 
-function initJar() {
-  const positions = getJarPositions();
+function renderJarPositions(positions) {
   const body = document.getElementById('jar-body');
   body.innerHTML = '';
   positions.forEach(p => body.appendChild(makeJarSpan(p)));
   updateJarCount(positions.length);
+}
+
+async function initJar() {
   const today = new Date().toISOString().slice(0, 10);
+  try {
+    const r = await fetch('/.netlify/functions/jar');
+    if (r.ok) {
+      const positions = await r.json();
+      localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
+      renderJarPositions(positions);
+    } else {
+      renderJarPositions(getJarPositions());
+    }
+  } catch(e) {
+    renderJarPositions(getJarPositions());
+  }
   if (localStorage.getItem('ooo_jar_last_drop') === today) {
     document.getElementById('jar-btn').disabled = true;
     document.getElementById('jar-msg').textContent = 'Come back tomorrow for another! 🥐';
   }
 }
 
-function dropCroissant() {
+async function dropCroissant() {
   const today = new Date().toISOString().slice(0, 10);
   if (localStorage.getItem('ooo_jar_last_drop') === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
-  positions.push(p);
-  localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
   localStorage.setItem('ooo_jar_last_drop', today);
-  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
-  updateJarCount(positions.length);
   document.getElementById('jar-btn').disabled = true;
   document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  try {
+    const r = await fetch('/.netlify/functions/jar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p)
+    });
+    if (r.ok) {
+      const updated = await r.json();
+      localStorage.setItem('ooo_jar_positions', JSON.stringify(updated));
+      renderJarPositions(updated);
+      return;
+    }
+    if (r.status === 429) return;
+  } catch(e) {}
+  positions.push(p);
+  localStorage.setItem('ooo_jar_positions', JSON.stringify(positions));
+  document.getElementById('jar-body').appendChild(makeJarSpan(p, 'jar-drop'));
+  updateJarCount(positions.length);
 }
 
 // ── INIT ──

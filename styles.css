@@ -504,6 +504,38 @@ textarea { resize:vertical; min-height:80px; }
 }
 
 /* ── CROISSANT POPUP ── */
+#motion-popup {
+  display: none;
+  position: fixed; inset: 0; z-index: 10001;
+  align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.45);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+#motion-popup.visible { display: flex; }
+.motion-popup-inner {
+  background: var(--sand);
+  border-radius: 20px 20px 0 0;
+  padding: 28px 24px 36px;
+  width: 100%; max-width: 480px;
+  text-align: center;
+}
+body.night .motion-popup-inner { background: #1E1B4B; }
+.motion-popup-icon { font-size: 2rem; margin-bottom: 10px; }
+.motion-popup-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+.motion-popup-body { font-size: 0.88rem; color: var(--muted); line-height: 1.5; margin-bottom: 22px; }
+.motion-popup-actions { display: flex; flex-direction: column; gap: 10px; }
+.motion-popup-enable {
+  background: #7B6FCD; color: #fff;
+  border: none; border-radius: 12px;
+  padding: 14px; font-size: 1rem; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+.motion-popup-skip {
+  background: none; border: none;
+  color: var(--muted); font-size: 0.9rem;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 4px;
+}
+
 #croissant-popup {
   display:none; position:fixed; inset:0; background:rgba(10,8,30,0.92);
   z-index:10001; align-items:flex-start; justify-content:center; padding:80px 20px 20px;

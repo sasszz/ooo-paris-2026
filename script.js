@@ -522,6 +522,16 @@ function openCroissantPopup() {
   _croissantPopupJustOpened = true;
   setTimeout(() => { _croissantPopupJustOpened = false; }, 300);
 }
+function enableMotion() {
+  document.getElementById('motion-popup').classList.remove('visible');
+  DeviceOrientationEvent.requestPermission()
+    .then(s => { if (s === 'granted' && window._jarListen) window._jarListen(); })
+    .catch(() => {});
+}
+function skipMotion() {
+  document.getElementById('motion-popup').classList.remove('visible');
+}
+
 function closeCroissantPopup() {
   if (_croissantPopupJustOpened) return;
   document.getElementById('croissant-popup').classList.remove('open');
@@ -745,6 +755,21 @@ function beginJarPhysics() {
     el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${r}deg)`;
     return { el, x, y, vx: (Math.random() - 0.5) * 2.5, vy: (Math.random() - 0.5) * 2.5, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 };
   });
+  body.addEventListener('pointerdown', e => {
+    const span = e.target.closest('.jar-croissant');
+    if (!span || !_jarBodies) return;
+    e.stopPropagation();
+    const b = _jarBodies.find(b => b.el === span);
+    if (!b) return;
+    const rect = span.getBoundingClientRect();
+    const dx = (rect.left + rect.width / 2) - e.clientX;
+    const dy = (rect.top + rect.height / 2) - e.clientY;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    b.vx += (dx / len) * 5;
+    b.vy += (dy / len) * 5;
+    _jarLastTilt = Date.now();
+  });
+
   const observer = new IntersectionObserver(([entry]) => {
     _jarVisible = entry.isIntersecting;
     if (_jarVisible) requestAnimationFrame(jarPhysicsFrame);
@@ -828,11 +853,10 @@ function initJarTilt() {
   };
 
   if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
-    document.getElementById('jar-btn').addEventListener('click', () => {
-      DeviceOrientationEvent.requestPermission()
-        .then(s => { if (s === 'granted') listen(); })
-        .catch(() => {});
-    }, { once: true });
+    window._jarListen = listen;
+    setTimeout(() => {
+      document.getElementById('motion-popup').classList.add('visible');
+    }, 1500);
   } else {
     listen();
   }

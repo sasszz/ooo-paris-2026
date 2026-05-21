@@ -700,6 +700,10 @@ async function dropCroissant() {
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
 
+  const btn = document.getElementById('jar-btn');
+  btn.disabled = true;
+  btn.textContent = 'Beaming croissant 🥐';
+
   const span = makeJarSpan();
   const jarBody = document.getElementById('jar-body');
   jarBody.appendChild(span);
@@ -718,19 +722,26 @@ async function dropCroissant() {
   }
 
   try {
-    const r = await fetch('/.netlify/functions/jar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p)
-    });
+    const [r] = await Promise.all([
+      fetch('/.netlify/functions/jar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+      }),
+      new Promise(res => setTimeout(res, 1000))
+    ]);
     if (r.ok) {
       const updated = await r.json();
       localStorage.setItem('ooo_jar_positions', JSON.stringify(updated));
-    } } catch(e) {}
+    } } catch(e) { await new Promise(res => setTimeout(res, 1000)); }
 
   if (!JAR_DEV) {
-    document.getElementById('jar-btn').disabled = true;
+    btn.disabled = true;
+    btn.textContent = 'Drop a 🥐';
     document.getElementById('jar-msg').textContent = 'Merci! Come back tomorrow for another 🥐';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Drop a 🥐';
   }
 }
 

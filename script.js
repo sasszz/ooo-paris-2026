@@ -756,17 +756,21 @@ function beginJarPhysics() {
     return { el, x, y, vx: (Math.random() - 0.5) * 2.5, vy: (Math.random() - 0.5) * 2.5, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 };
   });
   body.addEventListener('pointerdown', e => {
-    const span = e.target.closest('.jar-croissant');
-    if (!span || !_jarBodies) return;
-    e.stopPropagation();
-    const b = _jarBodies.find(b => b.el === span);
-    if (!b) return;
-    const rect = span.getBoundingClientRect();
-    const dx = (rect.left + rect.width / 2) - e.clientX;
-    const dy = (rect.top + rect.height / 2) - e.clientY;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    b.vx += (dx / len) * 5;
-    b.vy += (dy / len) * 5;
+    if (!_jarBodies) return;
+    const rect = body.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const RADIUS = 45;
+    _jarBodies.forEach(b => {
+      const dx = (b.x + 9) - px;
+      const dy = (b.y + 9) - py;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (dist < RADIUS) {
+        const force = (RADIUS - dist) / RADIUS * 6;
+        b.vx += (dx / dist) * force;
+        b.vy += (dy / dist) * force;
+      }
+    });
     _jarLastTilt = Date.now();
   });
 

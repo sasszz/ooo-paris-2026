@@ -727,7 +727,7 @@ async function dropCroissant() {
 // ── JAR TILT PHYSICS ──
 let _jarBodies = null;
 let _jarGX = 0, _jarGY = 0;
-let _jarLastTilt = Date.now(), _jarPrevGamma = 0, _jarPrevBeta = 90;
+let _jarLastTilt = Date.now(), _jarPrevGamma = 0, _jarPrevBeta = 90, _jarHasOrientation = false;
 
 function beginJarPhysics() {
   if (_jarBodies) return;
@@ -758,10 +758,11 @@ function jarPhysicsFrame() {
   if (!_jarBodies || !_jarVisible) return;
   const body = document.getElementById('jar-body');
   const W = body.clientWidth, H = body.clientHeight, S = 18;
+  const tiltActive = _jarHasOrientation && (Math.abs(_jarGX) > 0.15 || _jarGY < 0.85);
   const idleMs = Date.now() - _jarLastTilt;
-  const energy = idleMs < 3000 ? 1 : Math.max(0, 1 - (idleMs - 3000) / 5000);
+  const energy = tiltActive ? 1 : (idleMs < 3000 ? 1 : Math.max(0, 1 - (idleMs - 3000) / 5000));
   const WANDER = 0.0015 * energy, TILT = 0.018;
-  const damp = 0.9985 - (1 - energy) * 0.11; // 0.9985 active → 0.8885 at rest
+  const damp = 0.9985 - (1 - energy) * 0.05; // 0.9985 active → 0.9485 at rest
 
   _jarBodies.forEach(b => {
     b.wa += b.waDelta;
@@ -817,6 +818,7 @@ function initJarTilt() {
       const b = (beta - 90) * Math.PI / 180;
       _jarGX = Math.sin(g);
       _jarGY = Math.cos(g) * Math.cos(b);
+      _jarHasOrientation = true;
       if (Math.abs(gamma - _jarPrevGamma) > 0.5 || Math.abs(beta - _jarPrevBeta) > 0.5) {
         _jarLastTilt = Date.now();
         _jarPrevGamma = gamma;

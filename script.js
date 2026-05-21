@@ -29,17 +29,17 @@ let map, markers, markerMap = {}, _checkinByTs = {}, _totalCroissants = 0;
 
 function initMap() {
   map = L.map('map', { zoomControl: true, scrollWheelZoom: false });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO', maxZoom: 18
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(map);
   markers = L.featureGroup().addTo(map);
 }
 
 function makeIcon(isLatest) {
-  const size = isLatest ? 16 : 13;
+  const size = isLatest ? 20 : 15;
   return L.divIcon({
     className: '',
-    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#7B6FCD' : '#6B5FB0'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
+    html: `<div style="width:${size}px;height:${size}px;background:${isLatest ? '#9B8FDE' : '#C8C8C8'};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.25)${isLatest ? ';animation:mpulse 2s ease-in-out infinite' : ''}"></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2 - 2]
@@ -123,7 +123,10 @@ async function renderPage() {
 
   const latest = checkins[checkins.length - 1];
   document.getElementById('latest-section').style.display = 'block';
-  document.getElementById('checkin-location').textContent = latest.location;
+  const _ci = latest.location.indexOf(',');
+  const _locPlace = _ci > -1 ? latest.location.slice(0, _ci) : latest.location;
+  const _locCity  = _ci > -1 ? latest.location.slice(_ci + 1).trim() : '';
+  document.getElementById('checkin-location').innerHTML = `<span class="loc-place">${_locPlace}</span>${_locCity ? `<span class="loc-city">${_locCity}</span>` : ''}`;
   document.getElementById('checkin-caption').textContent = latest.caption || '';
   document.getElementById('checkin-time').textContent = fmtLong(latest.timestamp);
   const croissantEl = document.getElementById('checkin-croissants');
@@ -161,7 +164,10 @@ async function renderPage() {
     document.getElementById('history-section').style.display = 'block';
     const list = document.getElementById('history-list');
     list.innerHTML = '';
-    checkins.slice(0, -1).reverse().forEach(c => {
+    const pastCheckins = checkins.slice(0, -1).reverse();
+    const PAGE = 5;
+
+    const makeHistoryItem = c => {
       const el = document.createElement('div');
       el.className = 'history-item';
       if (c.lat && c.lng) {
@@ -177,9 +183,39 @@ async function renderPage() {
         ? `<div class="history-thumb" style="cursor:pointer" onclick="event.stopPropagation();openLightboxByTs(${ts})"><img src="${c.photoUrl}"></div>`
         : `<div class="history-thumb">📍</div>`;
       const croissantBit = c.croissants ? `<div class="history-croissants">${'🥐'.repeat(c.croissants)}</div>` : '';
-      el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc">${c.location}</div><div class="history-cap">${c.caption || ''}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>${croissantBit}`;
-      list.appendChild(el);
-    });
+      const commaIdx = c.location.indexOf(',');
+      const locPlace = commaIdx > -1 ? c.location.slice(0, commaIdx) : c.location;
+      const locCity  = commaIdx > -1 ? c.location.slice(commaIdx + 1).trim() : '';
+      el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc"><span class="loc-place">${locPlace}</span>${locCity ? `<span class="loc-city">${locCity}</span>` : ''}</div><div class="history-cap">${c.caption || ''}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>${croissantBit}`;
+      return el;
+    };
+
+    const showMore = from => {
+      const existingBtn = list.querySelector('.history-more-btn');
+      if (existingBtn) existingBtn.remove();
+      pastCheckins.slice(from, from + PAGE).forEach(c => list.appendChild(makeHistoryItem(c)));
+      const btn = document.createElement('button');
+      btn.className = 'history-more-btn';
+      if (from + PAGE < pastCheckins.length) {
+        const remaining = pastCheckins.length - (from + PAGE);
+        btn.textContent = `Show ${Math.min(PAGE, remaining)} more stop${Math.min(PAGE, remaining) === 1 ? '' : 's'}`;
+        btn.onclick = () => showMore(from + PAGE);
+      } else {
+        btn.textContent = 'Collapse';
+        btn.onclick = () => {
+          const extras = [...list.querySelectorAll('.history-item')].slice(PAGE);
+          extras.forEach(el => el.classList.add('history-item-hiding'));
+          setTimeout(() => {
+            list.innerHTML = '';
+            showMore(0);
+            document.getElementById('history-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 350);
+        };
+      }
+      list.appendChild(btn);
+    };
+
+    showMore(0);
   }
 
   document.getElementById('ooo-note').style.display = 'block';
@@ -705,6 +741,8 @@ async function dropCroissant() {
   btn.textContent = 'Beaming croissant 🥐';
 
   const span = makeJarSpan();
+  span.classList.add('jar-croissant-new');
+  span.addEventListener('animationend', () => span.classList.remove('jar-croissant-new'), { once: true });
   const jarBody = document.getElementById('jar-body');
   jarBody.appendChild(span);
   positions.push(p);
@@ -759,12 +797,12 @@ function beginJarPhysics() {
   const MAX_BODIES = 30;
   _jarBodies = [...body.querySelectorAll('.jar-croissant')].slice(-MAX_BODIES).map(el => {
     const x = Math.random() * (W - S);
-    const y = Math.random() * (H - S);
+    const y = Math.random() * 3;
     const r = Math.random() * 360;
     el.style.left = '0';
     el.style.top  = '0';
     el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${r}deg)`;
-    return { el, x, y, vx: (Math.random() - 0.5) * 2.5, vy: (Math.random() - 0.5) * 2.5, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 };
+    return { el, x, y, vx: (Math.random() - 0.5) * 1.5, vy: 1 + Math.random() * 2, r, wa: Math.random() * Math.PI * 2, waDelta: (Math.random() - 0.5) * 0.006 };
   });
   body.addEventListener('pointerdown', e => {
     if (!_jarBodies) return;

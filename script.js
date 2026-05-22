@@ -906,6 +906,8 @@ async function initJar() {
     document.getElementById("jar-btn").disabled = true;
     document.getElementById("jar-msg").textContent =
       "Come back tomorrow for another! 🥐";
+  } else {
+    document.getElementById("jar-msg").textContent = "you know you want to";
   }
   requestAnimationFrame(() => requestAnimationFrame(beginJarPhysics));
 }
@@ -1034,7 +1036,7 @@ function toggleGodMode() {
       "Spam away";
     jarBtn.disabled = false;
     jarBtn.textContent = "Spam away 🥐🥐🥐🥐🥐";
-    jarMsg.textContent = "";
+    jarMsg.textContent = "go craaazzy 🥐";
   } else {
     btn.classList.remove("active");
     btn.textContent = "✦ god mode";
@@ -1076,7 +1078,7 @@ function toggleGodMode() {
       jarBtn.disabled = true;
       jarMsg.textContent = "Come back tomorrow for another! 🥐";
     } else {
-      jarMsg.textContent = "";
+      jarMsg.textContent = "you know you want to";
     }
   }
 }
@@ -1279,7 +1281,7 @@ function scheduleJarMidnightReset() {
         const jarMsg = document.getElementById("jar-msg");
         jarBtn.disabled = false;
         jarBtn.textContent = "Drop a 🥐";
-        jarMsg.textContent = "";
+        jarMsg.textContent = "you know you want to";
       }
     }
     scheduleJarMidnightReset();

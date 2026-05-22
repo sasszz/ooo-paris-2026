@@ -298,6 +298,7 @@ footer .admin-btn { margin-top: 28px; }
   font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.85rem;
   padding: 10px 20px; border-radius: 30px; border: none; cursor: pointer;
   transition: background 0.2s, transform 0.2s;
+  touch-action: manipulation;
 }
 .jar-btn:hover:not(:disabled) { background: #B8B8F0; transform: translateY(-1px); }
 .jar-btn:disabled { opacity: 0.5; cursor: default; transform: none; }

@@ -35,7 +35,8 @@ let map,
   markers,
   markerMap = {},
   _checkinByTs = {},
-  _totalCroissants = 0;
+  _badgeClickRegistered = false,
+  _jarBodyEl = null;
 
 function initMap() {
   map = L.map("map", { zoomControl: true, scrollWheelZoom: false });
@@ -68,8 +69,10 @@ function renderMap(checkins) {
     map.setView([20, 0], 2);
     return;
   }
-  _totalCroissants = checkins.reduce((sum, c) => sum + (c.croissants || 0), 0);
-  const totalCroissants = _totalCroissants;
+  const totalCroissants = checkins.reduce(
+    (sum, c) => sum + (c.croissants || 0),
+    0,
+  );
 
   geo.forEach((c, i) => {
     const isLatest = i === geo.length - 1;
@@ -81,9 +84,8 @@ function renderMap(checkins) {
     const crois = c.croissants
       ? `<div class="popup-croissants">${"🥐".repeat(c.croissants)}</div>`
       : "";
-    const _pci = c.location.indexOf(",");
-    const _pPlace = _pci > -1 ? c.location.slice(0, _pci) : c.location;
-    const _pCity = _pci > -1 ? flagLoc(c.location.slice(_pci + 1).trim()) : "";
+    const { place: _pPlace, city: _pCityRaw } = splitLocation(c.location);
+    const _pCity = _pCityRaw ? flagLoc(_pCityRaw) : "";
     m.bindPopup(
       `<div class="popup-card" onclick="openLightboxByTs(${c.timestamp})">${img}<div class="popup-loc">${_pPlace}${_pCity ? `<br><span class="popup-city">${_pCity}</span>` : ""}</div>${cap}${crois}<div class="popup-time">${fmtShort(c.timestamp)}</div></div>`,
       { maxWidth: 260 },
@@ -129,11 +131,10 @@ function renderMap(checkins) {
     `<span style="color:var(--badge-accent);text-transform:none">${s}</span>`;
   const num = (n) =>
     `<span style="color:var(--badge-accent);font-weight:700">${n}</span>`;
-  const arrow = `▾`;
-  const stopLabel = () =>
-    `${stats.stops} stops ${serif("and counting")} ${arrow}`;
+  const collapsedHtml = `${stats.stops} stops ${serif("and counting")} ▾`;
+  badge.dataset.collapsed = collapsedHtml;
   badge.style.display = "inline-flex";
-  badge.innerHTML = stopLabel();
+  badge.innerHTML = collapsedHtml;
   badge.onclick = () => {
     const open = badge.classList.toggle("expanded");
     if (open) {
@@ -145,19 +146,23 @@ function renderMap(checkins) {
         ${stats.croissants ? `<div class="badge-stat">${num(stats.croissants)} 🥐 eaten</div>` : ""}
       `;
     } else {
-      badge.innerHTML = stopLabel();
+      badge.innerHTML = badge.dataset.collapsed;
     }
   };
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (!badge.contains(e.target)) {
-        badge.classList.remove("expanded");
-        badge.innerHTML = stopLabel();
-      }
-    },
-    { capture: true, once: false },
-  );
+  if (!_badgeClickRegistered) {
+    _badgeClickRegistered = true;
+    document.addEventListener(
+      "click",
+      (e) => {
+        const b = document.getElementById("map-badge");
+        if (b && !b.contains(e.target)) {
+          b.classList.remove("expanded");
+          b.innerHTML = b.dataset.collapsed || "";
+        }
+      },
+      { capture: true },
+    );
+  }
 }
 
 // ── PAGE RENDER ──
@@ -178,9 +183,7 @@ async function renderPage() {
 
   const latest = checkins[checkins.length - 1];
   document.getElementById("latest-section").style.display = "block";
-  const _ci = latest.location.indexOf(",");
-  const _locPlace = _ci > -1 ? latest.location.slice(0, _ci) : latest.location;
-  const _locCity = _ci > -1 ? latest.location.slice(_ci + 1).trim() : "";
+  const { place: _locPlace, city: _locCity } = splitLocation(latest.location);
   document.getElementById("checkin-location").innerHTML =
     `<span class="loc-place">${_locPlace}</span>${_locCity ? `<span class="loc-city">${flagLoc(_locCity)}</span>` : ""}`;
   const _captionEl = document.getElementById("checkin-caption");
@@ -210,7 +213,9 @@ async function renderPage() {
 
   if (latest.photoUrl) {
     document.getElementById("photo-placeholder").style.display = "none";
-    document.getElementById("checkin-caption").style.display = latest.caption ? "" : "none";
+    document.getElementById("checkin-caption").style.display = latest.caption
+      ? ""
+      : "none";
     const img = document.getElementById("checkin-photo");
     img.src = latest.photoUrl;
     img.style.display = "block";
@@ -249,11 +254,7 @@ async function renderPage() {
       const croissantBit = c.croissants
         ? `<div class="history-croissants">${"🥐".repeat(c.croissants)}</div>`
         : "";
-      const commaIdx = c.location.indexOf(",");
-      const locPlace =
-        commaIdx > -1 ? c.location.slice(0, commaIdx) : c.location;
-      const locCity =
-        commaIdx > -1 ? c.location.slice(commaIdx + 1).trim() : "";
+      const { place: locPlace, city: locCity } = splitLocation(c.location);
       el.innerHTML = `${thumb}<div class="history-info"><div class="history-loc"><span class="loc-place">${locPlace}</span>${locCity ? `<span class="loc-city">${flagLoc(locCity)}</span>` : ""}</div><div class="history-cap">${c.caption || ""}</div><div class="history-time">${fmtShort(c.timestamp)}</div></div>${croissantBit}`;
       return el;
     };
@@ -291,8 +292,6 @@ async function renderPage() {
 
     showMore(0);
   }
-
-  document.getElementById("ooo-note").style.display = "block";
 }
 
 // ── LOCATION FORMATTING ──
@@ -300,6 +299,13 @@ function flagLoc(str) {
   return str
     .replace(/United States of America/gi, "USA")
     .replace(/United States/gi, "USA");
+}
+
+function splitLocation(loc) {
+  const ci = loc.indexOf(",");
+  return ci > -1
+    ? { place: loc.slice(0, ci), city: loc.slice(ci + 1).trim() }
+    : { place: loc, city: "" };
 }
 
 // ── FORMATTERS ──
@@ -319,10 +325,7 @@ function fmtShort(ts) {
 }
 
 // ── ADMIN ──
-let unlocked = false;
-
 function openAdmin() {
-  unlocked = false;
   document.getElementById("pw-input").value = "";
   document.getElementById("login-status").textContent = "";
   document.getElementById("admin-overlay").classList.add("open");
@@ -353,7 +356,6 @@ async function doLogin() {
     });
     if (r.ok) {
       ({ token: sessionToken } = await r.json());
-      unlocked = true;
       showPostView();
     } else {
       document.getElementById("login-status").textContent =
@@ -577,7 +579,9 @@ function openLightbox(c) {
   } else {
     img.style.display = "none";
   }
-  document.getElementById("lightbox-location").textContent = flagLoc(c.location);
+  document.getElementById("lightbox-location").textContent = flagLoc(
+    c.location,
+  );
   const cap = document.getElementById("lightbox-caption");
   cap.textContent = c.caption || "";
   cap.style.display = c.caption ? "block" : "none";
@@ -881,6 +885,46 @@ function updateJarCount(count) {
         : `${count} croissants in the jar`;
 }
 
+function localDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function syncJarBtn() {
+  const btn = document.getElementById("jar-btn");
+  const msg = document.getElementById("jar-msg");
+  const today = localDateStr();
+  if (!JAR_DEV && localStorage.getItem("ooo_jar_last_drop") === today) {
+    btn.disabled = true;
+    btn.textContent = "Merci! Come back tomorrow 🥐";
+    msg.textContent = "";
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Drop a 🥐";
+    msg.textContent = "";
+  }
+}
+
+function addJarBody(span, jarBody) {
+  const W = jarBody.clientWidth || 110,
+    S = 18;
+  const startX = Math.random() * Math.max(0, W - S);
+  const r = Math.random() * 360;
+  span.style.left = "0";
+  span.style.top = "0";
+  span.style.transform = `translate3d(${startX}px,0px,0) rotate(${r}deg)`;
+  _jarBodies.push({
+    el: span,
+    x: startX,
+    y: 0,
+    vx: Math.random() - 0.5,
+    vy: 1,
+    r,
+    wa: Math.random() * Math.PI * 2,
+    waDelta: (Math.random() - 0.5) * 0.006,
+  });
+}
+
 function renderJarPositions(positions) {
   const body = document.getElementById("jar-body");
   body.innerHTML = "";
@@ -889,7 +933,6 @@ function renderJarPositions(positions) {
 }
 
 async function initJar() {
-  const today = new Date().toISOString().slice(0, 10);
   try {
     const r = await fetch("/.netlify/functions/jar");
     if (r.ok) {
@@ -902,13 +945,7 @@ async function initJar() {
   } catch (e) {
     renderJarPositions(getJarPositions());
   }
-  if (!JAR_DEV && localStorage.getItem("ooo_jar_last_drop") === today) {
-    document.getElementById("jar-btn").disabled = true;
-    document.getElementById("jar-msg").textContent =
-      "Come back tomorrow for another! 🥐";
-  } else {
-    document.getElementById("jar-msg").textContent = "you know you want to";
-  }
+  syncJarBtn();
   requestAnimationFrame(() => requestAnimationFrame(beginJarPhysics));
 }
 
@@ -919,29 +956,11 @@ async function dropCroissant() {
     const span = makeJarSpan();
     jarBody.appendChild(span);
     updateJarCount(count + 1);
-    if (_jarBodies) {
-      const W = jarBody.clientWidth || 110,
-        S = 18;
-      const startX = Math.random() * Math.max(0, W - S);
-      const r = Math.random() * 360;
-      span.style.left = "0";
-      span.style.top = "0";
-      span.style.transform = `translate3d(${startX}px,0px,0) rotate(${r}deg)`;
-      _jarBodies.push({
-        el: span,
-        x: startX,
-        y: 0,
-        vx: Math.random() - 0.5,
-        vy: 1,
-        r,
-        wa: Math.random() * Math.PI * 2,
-        waDelta: (Math.random() - 0.5) * 0.006,
-      });
-    }
+    if (_jarBodies) addJarBody(span, jarBody);
     return;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   if (!JAR_DEV && localStorage.getItem("ooo_jar_last_drop") === today) return;
   const positions = getJarPositions();
   const p = jarRandomPos(positions.length);
@@ -963,25 +982,7 @@ async function dropCroissant() {
   localStorage.setItem("ooo_jar_positions", JSON.stringify(positions));
   localStorage.setItem("ooo_jar_last_drop", today);
   updateJarCount(positions.length);
-  if (_jarBodies) {
-    const W = jarBody.clientWidth || 110,
-      S = 18;
-    const startX = Math.random() * (W - S);
-    const r = Math.random() * 360;
-    span.style.left = "0";
-    span.style.top = "0";
-    span.style.transform = `translate3d(${startX}px,0px,0) rotate(${r}deg)`;
-    _jarBodies.push({
-      el: span,
-      x: startX,
-      y: 0,
-      vx: Math.random() - 0.5,
-      vy: 1,
-      r,
-      wa: Math.random() * Math.PI * 2,
-      waDelta: (Math.random() - 0.5) * 0.006,
-    });
-  }
+  if (_jarBodies) addJarBody(span, jarBody);
 
   try {
     const [r] = await Promise.all([
@@ -1000,15 +1001,7 @@ async function dropCroissant() {
     await new Promise((res) => setTimeout(res, 1000));
   }
 
-  if (!JAR_DEV) {
-    btn.disabled = true;
-    btn.textContent = "Drop a 🥐";
-    document.getElementById("jar-msg").textContent =
-      "Merci! Come back tomorrow for another 🥐";
-  } else {
-    btn.disabled = false;
-    btn.textContent = "Drop a 🥐";
-  }
+  syncJarBtn();
 }
 
 // ── GOD MODE ──
@@ -1018,7 +1011,6 @@ function toggleGodMode() {
   _godMode = !_godMode;
   const btn = document.getElementById("god-mode-btn");
   const jarBtn = document.getElementById("jar-btn");
-  const jarWrap = document.querySelector(".jar-wrap");
   const jarBody = document.getElementById("jar-body");
   const jarMsg = document.getElementById("jar-msg");
 
@@ -1032,16 +1024,11 @@ function toggleGodMode() {
     _jarBodies.length = 0;
     updateJarCount(0);
 
-    document.querySelector(".jar-section-text strong").textContent =
-      "Spam away";
     jarBtn.disabled = false;
-    jarBtn.textContent = "Spam away 🥐🥐🥐🥐🥐";
-    jarMsg.textContent = "go craaazzy 🥐";
+    jarBtn.textContent = "🥐🥐🥐🥐🥐";
   } else {
     btn.classList.remove("active");
     btn.textContent = "✦ god mode";
-    document.querySelector(".jar-section-text strong").textContent =
-      "Drop a croissant in the jar";
     jarBody.classList.remove("god-mode");
 
     const positions = getJarPositions();
@@ -1072,14 +1059,7 @@ function toggleGodMode() {
         });
     }
 
-    jarBtn.textContent = "Drop a 🥐";
-    const today = new Date().toISOString().slice(0, 10);
-    if (!JAR_DEV && localStorage.getItem("ooo_jar_last_drop") === today) {
-      jarBtn.disabled = true;
-      jarMsg.textContent = "Come back tomorrow for another! 🥐";
-    } else {
-      jarMsg.textContent = "you know you want to";
-    }
+    syncJarBtn();
   }
 }
 
@@ -1123,6 +1103,7 @@ function beginJarPhysics() {
         waDelta: (Math.random() - 0.5) * 0.006,
       };
     });
+  _jarBodyEl = body;
   body.addEventListener("pointerdown", (e) => {
     if (!_jarBodies) return;
     const rect = body.getBoundingClientRect();
@@ -1156,7 +1137,7 @@ function beginJarPhysics() {
 let _jarVisible = true;
 function jarPhysicsFrame() {
   if (!_jarBodies || !_jarVisible) return;
-  const body = document.getElementById("jar-body");
+  const body = _jarBodyEl;
   const W = body.clientWidth,
     H = body.clientHeight,
     S = 18;
@@ -1272,20 +1253,16 @@ function initJarTilt() {
 
 // ── MIDNIGHT RESET ──
 function scheduleJarMidnightReset() {
-  const msUntilMidnight = 86400000 - (Date.now() % 86400000);
+  const now = new Date();
+  const nextMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+  );
   setTimeout(() => {
-    if (!_godMode) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem("ooo_jar_last_drop") !== today) {
-        const jarBtn = document.getElementById("jar-btn");
-        const jarMsg = document.getElementById("jar-msg");
-        jarBtn.disabled = false;
-        jarBtn.textContent = "Drop a 🥐";
-        jarMsg.textContent = "you know you want to";
-      }
-    }
+    if (!_godMode) syncJarBtn();
     scheduleJarMidnightReset();
-  }, msUntilMidnight);
+  }, nextMidnight - now);
 }
 
 // ── INIT ──

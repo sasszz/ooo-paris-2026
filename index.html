@@ -204,15 +204,7 @@
               />
             </div>
             <button class="btn-primary" onclick="doLogin()">Unlock</button>
-            <div
-              id="login-status"
-              style="
-                margin-top: 10px;
-                font-size: 0.82rem;
-                color: #c0392b;
-                text-align: center;
-              "
-            ></div>
+            <div id="login-status"></div>
           </div>
         </div>
 
@@ -291,7 +283,7 @@
     </div>
 
     <div id="croissant-popup" onclick="closeCroissantPopup()">
-      <button id="croissant-popup-close" onclick="closeCroissantPopup()">
+      <button id="croissant-popup-close" class="overlay-close" onclick="closeCroissantPopup()">
         ×
       </button>
       <div id="croissant-popup-inner" onclick="event.stopPropagation()">
@@ -303,7 +295,7 @@
     </div>
 
     <div id="lightbox" onclick="closeLightbox()">
-      <button id="lightbox-close" onclick="closeLightbox()">×</button>
+      <button id="lightbox-close" class="overlay-close" onclick="closeLightbox()">×</button>
       <div id="lightbox-post" onclick="event.stopPropagation()">
         <img id="lightbox-img" src="" alt="" />
         <div class="lightbox-body">

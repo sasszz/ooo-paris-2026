@@ -4,7 +4,7 @@
   --muted: #9090B8; --card: #FAFAFF;
   --badge-accent: #A0346A;
 }
-body.night { --badge-accent: #FFB3C6; }
+body.night { --badge-accent: #8888CC; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 button { cursor: pointer; }
@@ -124,7 +124,7 @@ main { max-width: 680px; margin: 0 auto; padding: 36px 20px 60px; }
   box-shadow: 0 4px 24px rgba(123,111,205,0.1);
 }
 .intro-card p { font-size: 0.95rem; line-height: 1.7; color: var(--ink); margin-bottom: 0; }
-.intro-card strong { color: var(--terra); }
+.intro-card strong { color: #1E1870; }
 .intro-contact { border-top: 1px solid var(--warm); padding-top: 14px; }
 .intro-contact p { font-size: 0.84rem; color: var(--muted); margin-bottom: 8px; }
 .contact-links { display: flex; gap: 20px; flex-wrap: wrap; }
@@ -272,7 +272,7 @@ footer .admin-btn { margin-top: 28px; }
   border-radius: 0 0 22px 22px;
   background: rgba(255,248,230,0.08);
   box-sizing: border-box; position: relative; cursor: pointer;
-  overflow: hidden;
+  overflow: hidden; outline: none; -webkit-tap-highlight-color: transparent;
 }
 .jar-croissant { font-size: 1.1rem; line-height: 1; position: absolute; transform: rotate(var(--jar-r, 0deg)); }
 .jar-croissant-new { animation: jar-new-glow 6s ease-out forwards; }
@@ -301,7 +301,7 @@ footer .admin-btn { margin-top: 28px; }
 }
 .jar-btn:hover:not(:disabled) { background: #B8B8F0; transform: translateY(-1px); }
 .jar-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
-.jar-msg { font-size: 0.78rem; color: var(--muted); min-height: 1.2em; }
+.jar-msg { font-size: 0.78rem; color: var(--muted); }
 
 /* ── PAGE LOADER ── */
 #page-loader {
@@ -320,7 +320,7 @@ footer .admin-btn { margin-top: 28px; }
 
 /* ── ADMIN OVERLAY ── */
 #admin-overlay {
-  display:none; position:fixed; inset:0; background:rgba(30,27,75,0.82);
+  display:none; position:fixed; inset:0; background:rgba(10,8,30,0.92);
   backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;
 }
 #admin-overlay.open { display:flex; }
@@ -411,8 +411,8 @@ textarea { resize:vertical; min-height:80px; }
 /* ── LEAFLET POPUP ── */
 .leaflet-popup-content-wrapper { border-radius:12px; font-family:'DM Sans',sans-serif; box-shadow:0 4px 20px rgba(0,0,0,0.15); transition:box-shadow 0.15s, border-color 0.15s; border:1.5px solid transparent; }
 .leaflet-popup-close-button {
-  width:26px !important; height:26px !important; font-size:1.4rem !important; font-weight:700 !important;
-  color:var(--ink) !important; line-height:26px !important; text-align:center !important;
+  width:26px !important; height:26px !important;
+  font-size:18px !important; line-height:26px !important; text-align:center !important;
   top:6px !important; right:6px !important; padding:0 !important; z-index:10 !important;
   background:white !important; border-radius:50% !important;
 }
@@ -452,6 +452,7 @@ textarea { resize:vertical; min-height:80px; }
 }
 #lightbox-close:hover { background:rgba(204,204,255,0.25); }
 .popup-loc { font-weight:600; font-size:0.88rem; margin-bottom:3px; }
+.popup-city { font-weight:400; font-size:0.76rem; color:#777; }
 .popup-cap { font-size:0.76rem; color:#555; line-height:1.4; margin-bottom:3px; }
 .popup-time { font-size:0.68rem; color:#999; }
 
@@ -606,12 +607,42 @@ body.night .motion-popup-inner { background: #1E1B4B; }
 }
 #croissant-popup-close:hover { background:rgba(204,204,255,0.25); }
 
+/* ── GOD MODE ── */
+@keyframes god-rainbow-btn {
+  0%   { border-color: #ff4466; box-shadow: 0 0 10px #ff446688, 0 0 22px #ff446644; color: #ff4466; }
+  16%  { border-color: #ff8800; box-shadow: 0 0 10px #ff880088, 0 0 22px #ff880044; color: #ff8800; }
+  33%  { border-color: #ffcc00; box-shadow: 0 0 10px #ffcc0088, 0 0 22px #ffcc0044; color: #ffcc00; }
+  50%  { border-color: #00dd88; box-shadow: 0 0 10px #00dd8888, 0 0 22px #00dd8844; color: #00dd88; }
+  66%  { border-color: #00aaff; box-shadow: 0 0 10px #00aaff88, 0 0 22px #00aaff44; color: #00aaff; }
+  83%  { border-color: #cc44ff; box-shadow: 0 0 10px #cc44ff88, 0 0 22px #cc44ff44; color: #cc44ff; }
+  100% { border-color: #ff4466; box-shadow: 0 0 10px #ff446688, 0 0 22px #ff446644; color: #ff4466; }
+}
+@keyframes god-rainbow-jar {
+  0%   { box-shadow: 0 0 10px #ff4466, 0 0 22px #ff446644; border-color: rgba(255,68,102,0.6); }
+  16%  { box-shadow: 0 0 10px #ff8800, 0 0 22px #ff880044; border-color: rgba(255,136,0,0.6); }
+  33%  { box-shadow: 0 0 10px #ffcc00, 0 0 22px #ffcc0044; border-color: rgba(255,204,0,0.6); }
+  50%  { box-shadow: 0 0 10px #00dd88, 0 0 22px #00dd8844; border-color: rgba(0,221,136,0.6); }
+  66%  { box-shadow: 0 0 10px #00aaff, 0 0 22px #00aaff44; border-color: rgba(0,170,255,0.6); }
+  83%  { box-shadow: 0 0 10px #cc44ff, 0 0 22px #cc44ff44; border-color: rgba(204,68,255,0.6); }
+  100% { box-shadow: 0 0 10px #ff4466, 0 0 22px #ff446644; border-color: rgba(255,68,102,0.6); }
+}
+.god-mode-btn {
+  background: none; border: 1.5px solid rgba(123,111,205,0.18); color: rgba(123,111,205,0.35);
+  font-size: 0.67rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 20px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: color 0.2s, border-color 0.2s;
+  margin-top: 2px;
+}
+.god-mode-btn:hover { color: var(--muted); border-color: rgba(123,111,205,0.4); }
+.god-mode-btn.active { animation: god-rainbow-btn 2s linear infinite; font-weight: 600; background: rgba(255,255,255,0.04); }
+.jar-body.god-mode { animation: god-rainbow-jar 2s linear infinite; }
+
 /* ── NIGHT MODE ── */
 body { transition: background-color 1.5s ease; }
 body.night { background: #13112E; }
 body.night .intro-card { background: #1E1B4B; border-color: rgba(204,204,255,0.12); }
 body.night .intro-card p { color: rgba(220,220,255,0.85); }
-body.night .intro-card strong { color: #CCCCFF; }
+body.night .intro-card strong { color: #8888CC; }
 body.night .section-label { color: rgba(204,204,255,0.4); }
 body.night #checkin-card { background: #1E1B4B; }
 body.night .pin-dot { border-color: #3D2F8F; }
@@ -644,3 +675,30 @@ body.night .coffee-text p { color: rgba(204,204,255,0.55); }
 body.night .admin-btn { border-color: rgba(204,204,255,0.3); color: rgba(204,204,255,0.6); }
 body.night .admin-btn:hover { border-color: var(--warm); color: var(--warm); }
 body.night .coffee-btn { color: var(--ink); }
+
+/* ── NIGHT MODE: FULL-SCREEN POPUPS ── */
+body.night .admin-panel { background: #2D2A5E; color: rgba(220,220,255,0.9); }
+body.night .admin-panel label { color: rgba(204,204,255,0.5); }
+body.night .admin-panel input[type="text"],
+body.night .admin-panel input[type="password"],
+body.night .admin-panel textarea { background: #1E1B4B; border-color: rgba(204,204,255,0.15); color: rgba(220,220,255,0.9); }
+body.night .admin-panel input::placeholder,
+body.night .admin-panel textarea::placeholder { color: rgba(204,204,255,0.3); }
+body.night .admin-close { background: rgba(204,204,255,0.1); border-color: rgba(204,204,255,0.2); color: rgba(204,204,255,0.7); }
+body.night .admin-title { color: rgba(220,220,255,0.95); }
+body.night .admin-sub { color: rgba(204,204,255,0.45); }
+body.night #lightbox-post { background: #1E1B4B; }
+body.night .lightbox-location { color: rgba(220,220,255,0.95); }
+body.night .lightbox-caption { color: rgba(204,204,255,0.72); }
+body.night .lightbox-time { color: rgba(204,204,255,0.5); border-top-color: rgba(204,204,255,0.1); }
+body.night #croissant-popup-inner { background: #1E1B4B; }
+body.night #croissant-popup-msg { color: rgba(204,204,255,0.8); }
+body.night #map-scroll-btn { background: #2D2A5E; border-color: rgba(204,204,255,0.2); }
+body.night #map-scroll-btn::after { border-color: rgba(204,204,255,0.8); }
+body.night .leaflet-popup-content-wrapper { background: #2D2A5E; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+body.night .leaflet-popup-tip { background: #2D2A5E; }
+body.night .leaflet-popup-close-button { background: #1E1B4B !important; color: rgba(204,204,255,0.7) !important; }
+body.night .popup-loc { color: rgba(220,220,255,0.95); }
+body.night .popup-city { color: rgba(204,204,255,0.55); }
+body.night .popup-cap { color: rgba(204,204,255,0.6); }
+body.night .popup-time { color: rgba(204,204,255,0.4); }

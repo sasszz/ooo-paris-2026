@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(netlify --version)"
+      "Bash(netlify --version)",
+      "Bash(git -C /Users/luciechevreuil/Desktop/ooo-paris-2026 status)"
     ]
   }
 }
